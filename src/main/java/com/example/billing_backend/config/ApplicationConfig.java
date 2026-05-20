@@ -15,7 +15,6 @@ public class ApplicationConfig {
 
     private final UserRepository repository;
 
-    // Intha Custom Bean-ah eduthu Spring Security internal provider runtime-la auto-config pannikum!
     @Bean
     public UserDetailsService userDetailsService() {
         return username -> repository.findByEmail(username)

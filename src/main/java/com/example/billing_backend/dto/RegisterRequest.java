@@ -14,5 +14,6 @@ public class RegisterRequest {
     private String name;
     private String email;
     private String password;
-    private Role role; // Enum (ADMIN or CASHIER)
+    private Role role;
+    private String adminSecretKey;
 }

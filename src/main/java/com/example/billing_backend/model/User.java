@@ -17,7 +17,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "_user") // 'user' is a reserved keyword in Postgres, so using '_user'
+@Table(name = "_user")
 public class User implements UserDetails {
 
     @Id
@@ -27,12 +27,21 @@ public class User implements UserDetails {
     private String name;
 
     @Column(unique = true)
-    private String email; // Ithu tha namma username
+    private String email;
 
     private String password;
 
     @Enumerated(EnumType.STRING)
-    private Role role; // ADMIN or CASHIER
+    private Role role;
+
+    @Enumerated(EnumType.STRING)
+    private UserStatus status;
+
+    private String phone;
+    private String branch;
+    private String counterNumber;
+    private String shiftTiming;
+    private Double basicSalary;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -56,5 +65,7 @@ public class User implements UserDetails {
     @Override
     public boolean isCredentialsNonExpired() { return true; }
     @Override
-    public boolean isEnabled() { return true; }
+    public boolean isEnabled() {
+        return this.status == UserStatus.ACTIVE;
+    }
 }
