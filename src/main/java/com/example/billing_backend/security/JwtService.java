@@ -68,7 +68,7 @@ public class JwtService {
     }
 
     private Key getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+        byte[] keyBytes = Decoders.BASE64.decode(secretKey != null ? secretKey : "5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437");
         return Keys.hmacShaKeyFor(keyBytes);
     }
     public String generateRefreshToken(org.springframework.security.core.userdetails.UserDetails userDetails) {
