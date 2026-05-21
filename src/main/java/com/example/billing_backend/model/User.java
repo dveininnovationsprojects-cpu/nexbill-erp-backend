@@ -68,4 +68,6 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return this.status == UserStatus.ACTIVE;
     }
+    private String resetOtp;
+    private java.time.LocalDateTime otpExpiry;
 }

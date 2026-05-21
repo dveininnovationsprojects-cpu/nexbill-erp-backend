@@ -71,4 +71,12 @@ public class JwtService {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
+    public String generateRefreshToken(org.springframework.security.core.userdetails.UserDetails userDetails) {
+        return io.jsonwebtoken.Jwts.builder()
+                .setSubject(userDetails.getUsername())
+                .setIssuedAt(new java.util.Date(System.currentTimeMillis()))
+                .setExpiration(new java.util.Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 7))
+                .signWith(getSignInKey(), io.jsonwebtoken.SignatureAlgorithm.HS256)
+                .compact();
+    }
 }

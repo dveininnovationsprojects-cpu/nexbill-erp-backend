@@ -3,12 +3,12 @@ package com.example.billing_backend.service;
 import com.example.billing_backend.dto.AuthRequest;
 import com.example.billing_backend.dto.AuthResponse;
 import com.example.billing_backend.dto.RegisterRequest;
-import com.example.billing_backend.model.Notification;
 import com.example.billing_backend.model.Role;
 import com.example.billing_backend.model.User;
 import com.example.billing_backend.model.UserStatus;
-import com.example.billing_backend.repository.NotificationRepository;
+import com.example.billing_backend.model.RefreshToken;
 import com.example.billing_backend.repository.UserRepository;
+import com.example.billing_backend.repository.RefreshTokenRepository;
 import com.example.billing_backend.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,16 +16,17 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
     private final UserRepository repository;
-    private final NotificationRepository notificationRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final EmailService emailService;
 
     public AuthResponse register(RegisterRequest request) {
         if (repository.findByEmail(request.getEmail()).isPresent()) {
@@ -58,14 +59,6 @@ public class AuthenticationService {
         repository.save(user);
 
         if (request.getRole() == Role.CASHIER) {
-            var notification = Notification.builder()
-                    .message("New Cashier Registration Pending: " + user.getName())
-                    .relatedUserEmail(user.getEmail())
-                    .isRead(false)
-                    .createdAt(LocalDateTime.now())
-                    .build();
-            notificationRepository.save(notification);
-
             return AuthResponse.builder()
                     .message("Registration successful. Waiting for Admin approval.")
                     .token(null)
@@ -80,24 +73,106 @@ public class AuthenticationService {
     }
 
     public AuthResponse authenticate(AuthRequest request) {
-        var user = repository.findByEmail(request.getEmail()).orElseThrow();
+        try {
+            var user = repository.findByEmail(request.getEmail())
+                    .orElseThrow(() -> new org.springframework.security.authentication.BadCredentialsException("Invalid email or password"));
 
-        if (user.getStatus() != UserStatus.ACTIVE) {
+            if (user.getStatus() != UserStatus.ACTIVE) {
+                return AuthResponse.builder()
+                        .message("Account is not active. Please wait for Admin approval.")
+                        .token(null)
+                        .build();
+            }
+
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+
+            var jwtToken = jwtService.generateToken(user);
+            var refreshTokenString = jwtService.generateRefreshToken(user);
+
+            refreshTokenRepository.deleteByUser(user);
+
+            var refreshToken = RefreshToken.builder()
+                    .user(user)
+                    .token(refreshTokenString)
+                    .expiryDate(Instant.now().plusMillis(1000L * 60 * 60 * 24 * 7))
+                    .build();
+            refreshTokenRepository.save(refreshToken);
+
             return AuthResponse.builder()
-                    .message("Account is not active. Please wait for Admin approval.")
+                    .message("Login successful")
+                    .token(jwtToken)
+                    .refreshToken(refreshTokenString)
+                    .build();
+
+        } catch (org.springframework.security.core.AuthenticationException | java.util.NoSuchElementException e) {
+            return AuthResponse.builder()
+                    .message("Invalid email or password")
                     .token(null)
                     .build();
         }
+    }
 
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
+    public AuthResponse refreshToken(String requestRefreshToken) {
+        RefreshToken tokenEntity = refreshTokenRepository.findByToken(requestRefreshToken)
+                .orElseThrow(() -> new RuntimeException("Refresh token is missing or invalid!"));
 
-        var jwtToken = jwtService.generateToken(user);
+        if (tokenEntity.getExpiryDate().compareTo(Instant.now()) < 0) {
+            refreshTokenRepository.delete(tokenEntity);
+            throw new RuntimeException("Refresh token was expired. Please make a new signin request");
+        }
+
+        var user = tokenEntity.getUser();
+        var accessToken = jwtService.generateToken(user);
 
         return AuthResponse.builder()
-                .message("Login successful")
-                .token(jwtToken)
+                .message("Token refreshed successfully")
+                .token(accessToken)
+                .build();
+    }
+    public AuthResponse forgotPassword(String email) {
+        var user = repository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User account entry not found!"));
+
+        java.util.Random random = new java.util.Random();
+        String otp = String.format("%06d", random.nextInt(1000000));
+
+        user.setResetOtp(otp);
+        user.setOtpExpiry(java.time.LocalDateTime.now().plusMinutes(10));
+        repository.save(user);
+
+        emailService.sendOtpEmail(user.getEmail(), otp);
+
+        return AuthResponse.builder()
+                .message("Verification code sent successfully")
+                .token(null)
+                .build();
+    }
+
+    public AuthResponse resetPassword(com.example.billing_backend.dto.PasswordResetDto request) {
+        var user = repository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("User account not found!"));
+
+        if (user.getResetOtp() == null || !user.getResetOtp().equals(request.getOtp())) {
+            throw new RuntimeException("Invalid verification credentials!");
+        }
+
+        if (user.getOtpExpiry().isBefore(java.time.LocalDateTime.now())) {
+            user.setResetOtp(null);
+            user.setOtpExpiry(null);
+            repository.save(user);
+            throw new RuntimeException("Verification code expired!");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setResetOtp(null);
+        user.setOtpExpiry(null);
+        repository.save(user);
+
+        return AuthResponse.builder()
+                .message("Password updated successfully")
+                .token(null)
                 .build();
     }
 }

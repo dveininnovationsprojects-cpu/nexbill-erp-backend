@@ -19,9 +19,15 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    private String title;
+
     private String message;
 
-    private String relatedUserEmail;
+    @Enumerated(EnumType.STRING)
+    private NotificationType type;
+
+    @Enumerated(EnumType.STRING)
+    private Role targetRole;
 
     private boolean isRead;
 

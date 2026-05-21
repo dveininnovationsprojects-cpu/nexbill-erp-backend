@@ -12,4 +12,5 @@ import lombok.NoArgsConstructor;
 public class AuthResponse {
     private String message; // Frontend alert-ku intha field puthusa add pannirukom
     private String token;
+    private String refreshToken;
 }

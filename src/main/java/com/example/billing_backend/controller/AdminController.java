@@ -1,10 +1,9 @@
 package com.example.billing_backend.controller;
 
 import com.example.billing_backend.dto.CashierApprovalRequest;
-import com.example.billing_backend.model.Notification;
+import com.example.billing_backend.model.Role;
 import com.example.billing_backend.model.User;
 import com.example.billing_backend.model.UserStatus;
-import com.example.billing_backend.repository.NotificationRepository;
 import com.example.billing_backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,12 +16,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdminController {
 
-    private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
 
-    @GetMapping("/notifications")
-    public ResponseEntity<List<Notification>> getUnreadNotifications() {
-        return ResponseEntity.ok(notificationRepository.findByIsReadFalseOrderByCreatedAtDesc());
+    @GetMapping("/pending-cashiers")
+    public ResponseEntity<List<User>> getPendingCashiers() {
+        return ResponseEntity.ok(userRepository.findByRoleAndStatus(Role.CASHIER, UserStatus.PENDING));
     }
 
     @PostMapping("/approve-cashier/{email}")
@@ -42,14 +40,10 @@ public class AdminController {
 
         userRepository.save(cashier);
 
-        List<Notification> notifications = notificationRepository.findAll();
-        for (Notification n : notifications) {
-            if (n.getRelatedUserEmail() != null && n.getRelatedUserEmail().equals(email)) {
-                n.setRead(true);
-                notificationRepository.save(n);
-            }
-        }
-
         return ResponseEntity.ok("Cashier approved and details updated successfully");
+    }
+    @GetMapping("/active-cashiers")
+    public ResponseEntity<List<User>> getActiveCashiers() {
+        return ResponseEntity.ok(userRepository.findByRoleAndStatus(Role.CASHIER, UserStatus.ACTIVE));
     }
 }
