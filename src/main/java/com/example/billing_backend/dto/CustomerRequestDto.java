@@ -9,8 +9,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class AuthResponse {
-    private String message; // Frontend alert-ku intha field puthusa add pannirukom
-    private String token;
-    private String refreshToken;
+public class CustomerRequestDto {
+    private String name;
+    private String mobile;
+    private String email;
+    private Double creditLimit;
 }
