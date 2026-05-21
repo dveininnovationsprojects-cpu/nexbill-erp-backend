@@ -108,4 +108,23 @@ public class SupplierServiceImpl implements SupplierService {
                 .outstandingBalance(supplier.getOutstandingBalance())
                 .build();
     }
+    @Override
+    public SupplierResponseDto updateSupplierLedger(Integer id, Double purchaseAmount, Double paidAmount) {
+        Supplier supplier = supplierRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Supplier not found"));
+
+        if (purchaseAmount != null && purchaseAmount > 0) {
+            supplier.setTotalPurchasedAmount(supplier.getTotalPurchasedAmount() + purchaseAmount);
+        }
+
+        if (paidAmount != null && paidAmount > 0) {
+            supplier.setTotalPaidAmount(supplier.getTotalPaidAmount() + paidAmount);
+        }
+
+        double calculatedBalance = supplier.getTotalPurchasedAmount() - supplier.getTotalPaidAmount();
+        supplier.setOutstandingBalance(calculatedBalance);
+
+        Supplier savedSupplier = supplierRepository.save(supplier);
+        return mapToResponseDto(savedSupplier);
+    }
 }

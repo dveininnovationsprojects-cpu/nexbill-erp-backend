@@ -11,4 +11,5 @@ public interface SupplierService {
     SupplierResponseDto getSupplierById(Integer id);
     List<SupplierResponseDto> getAllSuppliers();
     List<SupplierResponseDto> getActiveSuppliers();
+    SupplierResponseDto updateSupplierLedger(Integer id, Double purchaseAmount, Double paidAmount);
 }

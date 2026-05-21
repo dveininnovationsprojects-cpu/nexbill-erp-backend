@@ -29,7 +29,7 @@ public class SupplierController {
         return ResponseEntity.ok(supplierService.updateSupplier(id, request));
     }
 
-    @PatchMapping("/{id}/toggle-status")
+    @PutMapping("/{id}/toggle-status")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> toggleSupplierStatus(@PathVariable Integer id) {
         return ResponseEntity.ok(supplierService.toggleSupplierStatus(id));
@@ -51,5 +51,13 @@ public class SupplierController {
     @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER')")
     public ResponseEntity<List<SupplierResponseDto>> getActiveSuppliers() {
         return ResponseEntity.ok(supplierService.getActiveSuppliers());
+    }
+    @PutMapping("/{id}/update-ledger")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<SupplierResponseDto> updateLedger(
+            @PathVariable Integer id,
+            @RequestParam(required = false, defaultValue = "0") Double purchase,
+            @RequestParam(required = false, defaultValue = "0") Double paid) {
+        return ResponseEntity.ok(supplierService.updateSupplierLedger(id, purchase, paid));
     }
 }
