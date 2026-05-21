@@ -39,7 +39,7 @@ public class JwtService {
                 .setClaims(extraClaims)
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24))
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)) // 1 day
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -62,23 +62,18 @@ public class JwtService {
     }
 
     private Key getSignInKey() {
-<<<<<<< HEAD
         // Properties file-la irundhu key varala na, fallback for safety
         byte[] keyBytes = Decoders.BASE64.decode(secretKey != null ? secretKey : "5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437");
         return Keys.hmacShaKeyFor(keyBytes);
     }
-}
-=======
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey != null ? secretKey : "5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437");
-        return Keys.hmacShaKeyFor(keyBytes);
-    }
-    public String generateRefreshToken(org.springframework.security.core.userdetails.UserDetails userDetails) {
-        return io.jsonwebtoken.Jwts.builder()
+
+    // Navin add panna pudhu method (Clean imports-oda integrate panniyachu)
+    public String generateRefreshToken(UserDetails userDetails) {
+        return Jwts.builder()
                 .setSubject(userDetails.getUsername())
-                .setIssuedAt(new java.util.Date(System.currentTimeMillis()))
-                .setExpiration(new java.util.Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 7))
-                .signWith(getSignInKey(), io.jsonwebtoken.SignatureAlgorithm.HS256)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 7)) // 7 days expiration
+                .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 }
->>>>>>> 5b2a7815c86071a4f389928e5988ff97f0162186
