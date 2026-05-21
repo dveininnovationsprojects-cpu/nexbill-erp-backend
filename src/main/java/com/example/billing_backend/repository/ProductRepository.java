@@ -11,7 +11,10 @@ import java.util.Optional;
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
     boolean existsByBarcode(String barcode);
-    boolean existsBySku(String sku); // Puthusu
+    boolean existsBySku(String sku);
+
+    // CSV logic-ku thevayana puthu method
+    Optional<Product> findBySku(String sku);
 
     // Delete aagadha products-ah mattum edukka (Soft Delete Filter)
     List<Product> findByIsDeletedFalse();

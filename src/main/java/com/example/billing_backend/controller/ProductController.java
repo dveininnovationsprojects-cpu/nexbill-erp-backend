@@ -5,8 +5,9 @@ import com.example.billing_backend.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
- import org.springframework.security.access.prepost.PreAuthorize; // Role rules-ku
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -18,46 +19,57 @@ public class ProductController {
     @Autowired
     private ProductService productService;
 
-    // RULE: Only ADMIN can create
-     @PreAuthorize("hasRole('ADMIN')")
+    // RULE: Only ADMIN can create (FIXED ROLE BUG)
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @PostMapping("/add")
     public ResponseEntity<Product> addProduct(@RequestBody Product product) {
         return new ResponseEntity<>(productService.createProduct(product), HttpStatus.CREATED);
     }
 
     // RULE: ADMIN and CASHIER can view
-     @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
     @GetMapping("/all")
     public ResponseEntity<List<Product>> getAllProducts() {
         return ResponseEntity.ok(productService.getAllProducts());
     }
 
     // RULE: ADMIN and CASHIER can view specific
-     @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
     @GetMapping("/{id}")
     public ResponseEntity<Product> getProductById(@PathVariable Long id) {
         return ResponseEntity.ok(productService.getProductById(id));
     }
 
     // RULE: ADMIN and CASHIER can search
-     @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
     @GetMapping("/search")
     public ResponseEntity<List<Product>> searchProducts(@RequestParam String keyword) {
         return ResponseEntity.ok(productService.searchProducts(keyword));
     }
 
     // RULE: Only ADMIN can update
-     @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @PutMapping("/update/{id}")
     public ResponseEntity<Product> updateProduct(@PathVariable Long id, @RequestBody Product product) {
         return ResponseEntity.ok(productService.updateProduct(id, product));
     }
 
     // RULE: Only ADMIN can delete (Soft Delete)
-     @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<String> deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
         return ResponseEntity.ok("Product safely moved to trash (Soft Deleted)!");
+    }
+
+    // PUDHU FEATURE: Bulk Upload Endpoint
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PostMapping("/upload-bill")
+    public ResponseEntity<String> uploadSupplierBill(@RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body("Error: Uploaded bill file is empty!");
+        }
+        productService.processSupplierBill(file);
+        return ResponseEntity.ok("Supplier Bill processed! Products and Inventory updated successfully!");
     }
 }

@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -19,6 +20,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -32,11 +34,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
+        // Unga frontend URL (React/Vue)
         config.setAllowedOrigins(List.of("http://localhost:5173"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-
-        // Romba Mukkiyam: Set-Cookie header-ah frontend-ku expose panrom
         config.setExposedHeaders(List.of("Authorization", "Set-Cookie"));
         config.setAllowCredentials(true);
 
@@ -52,9 +53,21 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // 1. Open Endpoints (Login/Register)
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/billing/**").hasAnyRole("ADMIN", "CASHIER")
+
+                        // 2. INVENTORY ROUTES (Inga explicit-aaga define pandrom!)
+                        // hasAuthority use panna, exact-aaga "ROLE_ADMIN" nu check pannum
+                        .requestMatchers("/api/inventory/add-stock").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/api/inventory/reorder-level/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/api/inventory/low-stock").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/api/inventory/product/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_CASHIER")
+
+                        // 3. Other Routes
+                        .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/api/billing/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_CASHIER")
+
+                        // 4. Any other request must be authenticated
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

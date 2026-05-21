@@ -1,12 +1,20 @@
 package com.example.billing_backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "products")
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Product {
 
     @Id
@@ -17,31 +25,39 @@ public class Product {
     private String name;
 
     @Column(unique = true, nullable = false)
-    private String sku; // Stock Keeping Unit
+    private String sku;
 
-    @Column(unique = true, nullable = false)
+    @Column(unique = true)
     private String barcode;
 
-    @Column(nullable = false)
+    // --- PRICING & COMPLIANCE ---
     private BigDecimal purchasePrice;
-
-    @Column(nullable = false)
     private BigDecimal sellingPrice;
+    private Double gstPercentage;
+    private String hsnCode; // Indian GST-ku idhu romba mukkiyam!
+    private Double discountPercentage; // Offer poduradhukku (Eg: 10% off)
 
-    @Column(nullable = false)
-    private Integer stockQuantity;
+    // --- ENTERPRISE ATTRIBUTES (For Supermarket & Zudio) ---
+    private String brand; // E.g., "Aashirvaad", "Zudio", "Nike"
 
-    @Column(nullable = false)
-    private Integer gstPercentage; // Valid: 0, 5, 12, 18, 28
+    private String unit; // Measurement Unit: "NOS" (Pieces), "KG", "GM", "LTR", "PACK"
 
-    @Column(nullable = false)
-    private Integer reorderLevel;
+    private String size; // For Clothes: "S", "M", "L", "XL". For Shoes: "8", "9"
+
+    private String color; // "Red", "Blue", "Black"
+
+    private LocalDate expiryDate; // Supermarket perishable items-ku
+
+    // --- INVENTORY LINK ---
+    // Note: Integer-ah irundha quantity ippo Double aagiduchu (For 1.5 KG etc.)
+    private Double stockQuantity;
+    private Double reorderLevel;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "category_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Category category;
 
-    // SOFT DELETE FEATURE: True aakina deleted nu artham, aana DB-la irukkum
-    @Column(nullable = false)
+    // Soft delete status
     private boolean isDeleted = false;
 }

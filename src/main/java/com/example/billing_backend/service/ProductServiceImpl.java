@@ -4,10 +4,13 @@ import com.example.billing_backend.model.Category;
 import com.example.billing_backend.model.Product;
 import com.example.billing_backend.repository.CategoryRepository;
 import com.example.billing_backend.repository.ProductRepository;
-import com.example.billing_backend.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
@@ -21,7 +24,9 @@ public class ProductServiceImpl implements ProductService {
     @Autowired
     private CategoryRepository categoryRepository;
 
-    // Strict Validation Method (Create & Update rendukum use pannalam)
+    @Autowired
+    private InventoryService inventoryService; // Stock Sync panna idhu thevai
+
     private void validateProductRules(Product product) {
         if (product.getName() == null || product.getName().trim().isEmpty())
             throw new RuntimeException("Rule Failed: Product name is mandatory.");
@@ -39,7 +44,7 @@ public class ProductServiceImpl implements ProductService {
             throw new RuntimeException("Rule Failed: Reorder level cannot be negative.");
 
         List<Integer> validGst = Arrays.asList(0, 5, 12, 18, 28);
-        if (!validGst.contains(product.getGstPercentage()))
+        if (!validGst.contains(product.getGstPercentage().intValue()))
             throw new RuntimeException("Rule Failed: GST percentage must be valid (0, 5, 12, 18, 28).");
     }
 
@@ -57,13 +62,13 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new RuntimeException("Rule Failed: Selected Category does not exist."));
 
         product.setCategory(category);
-        product.setDeleted(false); // Default aaga active-la irukkum
+        product.setDeleted(false);
         return productRepository.save(product);
     }
 
     @Override
     public List<Product> getAllProducts() {
-        return productRepository.findByIsDeletedFalse(); // Deleted items varadhu
+        return productRepository.findByIsDeletedFalse();
     }
 
     @Override
@@ -116,8 +121,69 @@ public class ProductServiceImpl implements ProductService {
         Product product = productRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new RuntimeException("Product not found!"));
 
-        // SOFT DELETE LOGIC: Data-va azhikkaama true nu aakivitu save panrom
         product.setDeleted(true);
         productRepository.save(product);
+    }
+
+    // PUDHU FEATURE: Bulk CSV Upload Logic
+    @Override
+    @Transactional
+    public void processSupplierBill(MultipartFile file) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
+            String line;
+            boolean isFirstLine = true;
+
+            // Default Category (Upload panra products ellam idha default ah edukkum, illana Category ID pass pannanum)
+            Category defaultCategory = categoryRepository.findById(1L)
+                    .orElseThrow(() -> new RuntimeException("Please ensure at least one Category (ID: 1) exists in the database before uploading bills!"));
+
+            while ((line = br.readLine()) != null) {
+                if (isFirstLine) {
+                    isFirstLine = false;
+                    continue; // Header row-ah skip pannidum
+                }
+
+                String[] data = line.split(",");
+
+                if (data.length >= 7) {
+                    String name = data[0].trim();
+                    String sku = data[1].trim();
+                    String brand = data[2].trim();
+                    String unit = data[3].trim();
+                    BigDecimal purchasePrice = new BigDecimal(data[4].trim());
+                    BigDecimal sellingPrice = new BigDecimal(data[5].trim());
+                    Double quantity = Double.parseDouble(data[6].trim());
+
+                    Product product = productRepository.findBySku(sku).orElse(null);
+
+                    if (product == null) {
+                        // Product illana PUDHUSA create pandrom
+                        product = Product.builder()
+                                .name(name)
+                                .sku(sku)
+                                .brand(brand)
+                                .unit(unit)
+                                .purchasePrice(purchasePrice)
+                                .sellingPrice(sellingPrice)
+                                .stockQuantity(quantity)
+                                .reorderLevel(10.0)
+                                .gstPercentage(5.0)
+                                .isDeleted(false)
+                                .category(defaultCategory)
+                                .build();
+                        product = productRepository.save(product);
+                    } else {
+                        // Product already irundha Product Table-la stock update pandrom
+                        product.setStockQuantity(product.getStockQuantity() + quantity);
+                        productRepository.save(product);
+                    }
+
+                    // System-oda Core Inventory Table-laiyum stock sync pandrom
+                    inventoryService.addStock(product.getId(), quantity);
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to process supplier bill file: " + e.getMessage());
+        }
     }
 }
