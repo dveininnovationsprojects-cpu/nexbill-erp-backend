@@ -2,6 +2,8 @@ package com.example.billing_backend.repository;
 
 import com.example.billing_backend.model.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -12,13 +14,17 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     boolean existsByBarcode(String barcode);
     boolean existsBySku(String sku);
-
-    // CSV logic-ku thevayana puthu method
     Optional<Product> findBySku(String sku);
 
-    // Delete aagadha products-ah mattum edukka (Soft Delete Filter)
     List<Product> findByIsDeletedFalse();
     Optional<Product> findByIdAndIsDeletedFalse(Long id);
     List<Product> findByCategoryIdAndIsDeletedFalse(Long categoryId);
-    List<Product> findByNameContainingIgnoreCaseAndIsDeletedFalse(String keyword);
+
+    // 🔥 ENTERPRISE FIX: Multi-field Search Engine for Cashier
+    @Query("SELECT p FROM Product p WHERE p.isDeleted = false AND (" +
+            "LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(p.sku) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(p.barcode) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(p.brand) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    List<Product> searchProducts(@Param("keyword") String keyword);
 }

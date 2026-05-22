@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "products")
@@ -30,34 +31,48 @@ public class Product {
     @Column(unique = true)
     private String barcode;
 
-    // --- PRICING & COMPLIANCE ---
     private BigDecimal purchasePrice;
     private BigDecimal sellingPrice;
     private Double gstPercentage;
-    private String hsnCode; // Indian GST-ku idhu romba mukkiyam!
-    private Double discountPercentage; // Offer poduradhukku (Eg: 10% off)
+    private String hsnCode;
+    private Double discountPercentage;
 
-    // --- ENTERPRISE ATTRIBUTES (For Supermarket & Zudio) ---
-    private String brand; // E.g., "Aashirvaad", "Zudio", "Nike"
+    private String brand;
+    private String unit;
+    private String size;
+    private String color;
+    private LocalDate expiryDate;
 
-    private String unit; // Measurement Unit: "NOS" (Pieces), "KG", "GM", "LTR", "PACK"
+    // 🔥 ENTERPRISE FIX: stockQuantity and reorderLevel REMOVED! (Inventory Module will handle it)
 
-    private String size; // For Clothes: "S", "M", "L", "XL". For Shoes: "8", "9"
-
-    private String color; // "Red", "Blue", "Black"
-
-    private LocalDate expiryDate; // Supermarket perishable items-ku
-
-    // --- INVENTORY LINK ---
-    // Note: Integer-ah irundha quantity ippo Double aagiduchu (For 1.5 KG etc.)
-    private Double stockQuantity;
-    private Double reorderLevel;
+    @Enumerated(EnumType.STRING)
+    private ProductStatus status;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "category_id", nullable = false)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Category category;
 
-    // Soft delete status
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "supplier_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private Supplier supplier;
+
     private boolean isDeleted = false;
+
+    // --- AUDIT FIELDS ---
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+        if (status == null) status = ProductStatus.ACTIVE;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

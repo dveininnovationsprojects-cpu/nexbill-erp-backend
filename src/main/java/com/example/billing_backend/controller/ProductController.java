@@ -19,42 +19,36 @@ public class ProductController {
     @Autowired
     private ProductService productService;
 
-    // RULE: Only ADMIN can create (FIXED ROLE BUG)
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @PostMapping("/add")
     public ResponseEntity<Product> addProduct(@RequestBody Product product) {
         return new ResponseEntity<>(productService.createProduct(product), HttpStatus.CREATED);
     }
 
-    // RULE: ADMIN and CASHIER can view
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
     @GetMapping("/all")
     public ResponseEntity<List<Product>> getAllProducts() {
         return ResponseEntity.ok(productService.getAllProducts());
     }
 
-    // RULE: ADMIN and CASHIER can view specific
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
     @GetMapping("/{id}")
     public ResponseEntity<Product> getProductById(@PathVariable Long id) {
         return ResponseEntity.ok(productService.getProductById(id));
     }
 
-    // RULE: ADMIN and CASHIER can search
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
     @GetMapping("/search")
     public ResponseEntity<List<Product>> searchProducts(@RequestParam String keyword) {
         return ResponseEntity.ok(productService.searchProducts(keyword));
     }
 
-    // RULE: Only ADMIN can update
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @PutMapping("/update/{id}")
     public ResponseEntity<Product> updateProduct(@PathVariable Long id, @RequestBody Product product) {
         return ResponseEntity.ok(productService.updateProduct(id, product));
     }
 
-    // RULE: Only ADMIN can delete (Soft Delete)
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<String> deleteProduct(@PathVariable Long id) {
@@ -62,14 +56,18 @@ public class ProductController {
         return ResponseEntity.ok("Product safely moved to trash (Soft Deleted)!");
     }
 
-    // PUDHU FEATURE: Bulk Upload Endpoint
+    // PUDHU FEATURE: Crash-Free Bulk Upload Endpoint
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @PostMapping("/upload-bill")
-    public ResponseEntity<String> uploadSupplierBill(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<String> uploadSupplierBill(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "supplierId", required = false) Integer supplierId) { // INGA THAAN MAATHI IRUKKEN
+
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("Error: Uploaded bill file is empty!");
         }
-        productService.processSupplierBill(file);
-        return ResponseEntity.ok("Supplier Bill processed! Products and Inventory updated successfully!");
+
+        productService.processSupplierBill(file, supplierId);
+        return ResponseEntity.ok("Supplier Bill processed and Inventory updated successfully!");
     }
 }

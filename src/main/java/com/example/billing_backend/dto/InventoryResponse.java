@@ -1,18 +1,18 @@
 package com.example.billing_backend.dto;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
 public class InventoryResponse {
     private Long inventoryId;
+    private Long productId;
     private String productName;
-    private Integer availableQuantity;
-    private Integer reorderLevel;
-    private String status; // 'OK' or 'LOW STOCK' nu frontend-la color-ah kaata use aagum
+    private String sku;
+    private BigDecimal availableQuantity; // 🔥 FIX: BigDecimal Use panniyachu
+    private BigDecimal reorderLevel;      // 🔥 FIX: BigDecimal Use panniyachu
+    private LocalDateTime updatedAt;
 }

@@ -13,6 +13,6 @@ public interface ProductService {
     Product updateProduct(Long id, Product product);
     void deleteProduct(Long id);
 
-    // PUDHU FEATURE: Bulk Upload from CSV
-    void processSupplierBill(MultipartFile file);
+    // PUDHU LOGIC: Bill file + Endha supplier nu theriyanum
+    void processSupplierBill(MultipartFile file, Integer supplierId);
 }
