@@ -175,4 +175,15 @@ public class AuthenticationService {
                 .token(null)
                 .build();
     }
+    public void deleteUser(Integer id) {
+        User user = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("account not found!"));
+
+        if (refreshTokenRepository != null) {
+            refreshTokenRepository.deleteByUser(user);
+        }
+
+
+        repository.delete(user);
+    }
 }

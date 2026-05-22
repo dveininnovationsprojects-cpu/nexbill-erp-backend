@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -75,4 +76,12 @@ public class AuthController {
     public ResponseEntity<AuthResponse> resetPassword(@RequestBody com.example.billing_backend.dto.PasswordResetDto request) {
         return ResponseEntity.ok(service.resetPassword(request));
     }
+    @DeleteMapping("/users/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> deleteUser(@PathVariable Integer id) {
+        // user service function-ah call pannunga
+        service.deleteUser(id);
+        return ResponseEntity.ok("Account deleted successfully");
+    }
+
 }

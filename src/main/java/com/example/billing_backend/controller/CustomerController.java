@@ -49,4 +49,24 @@ public class CustomerController {
             @RequestParam(required = false, defaultValue = "0") Double paid) {
         return ResponseEntity.ok(customerService.updateCustomerLedger(id, bill, paid));
     }
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<java.util.Map<String, String>> handleExceptions(IllegalArgumentException e) {
+        java.util.Map<String, String> errorResponse = new java.util.HashMap<>();
+        errorResponse.put("error", "Bad Request");
+        errorResponse.put("message", e.getMessage());
+        return ResponseEntity.badRequest().body(errorResponse);
+    }
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> deleteCustomer(@PathVariable Integer id) {
+        customerService.deleteCustomer(id);
+        return ResponseEntity.ok("Customer deleted successfully");
+    }
+    @PutMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CustomerResponseDto> changeStatus(
+            @PathVariable Integer id,
+            @RequestParam com.example.billing_backend.model.CustomerStatus status) {
+        return ResponseEntity.ok(customerService.changeCustomerStatus(id, status));
+    }
 }
