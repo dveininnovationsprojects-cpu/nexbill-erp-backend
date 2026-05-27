@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -21,6 +22,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -36,6 +38,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
+        // Frontend URL connection
         config.setAllowedOrigins(List.of("http://localhost:5173"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
@@ -58,9 +61,24 @@ public class SecurityConfig {
                         .accessDeniedHandler(customAccessDeniedHandler)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        // 1. Open Endpoints
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/billing/**").hasAnyRole("ADMIN", "CASHIER")
+
+                        // 2. STOCK ALERTS (Real-time monitoring)
+                        .requestMatchers("/api/stock-alerts/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "CASHIER", "ROLE_CASHIER")
+
+                        // 3. INVENTORY MANAGEMENT
+                        .requestMatchers("/api/inventory/add/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
+                        .requestMatchers("/api/inventory/reduce/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "CASHIER", "ROLE_CASHIER")
+                        .requestMatchers("/api/inventory/reorder-level/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
+                        .requestMatchers("/api/inventory/low-stock").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "CASHIER", "ROLE_CASHIER")
+                        .requestMatchers("/api/inventory/product/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "CASHIER", "ROLE_CASHIER")
+
+                        // 4. ADMIN & BILLING ROUTES
+                        .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
+                        .requestMatchers("/api/billing/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "CASHIER", "ROLE_CASHIER")
+
+                        // 5. Secure all other requests
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
