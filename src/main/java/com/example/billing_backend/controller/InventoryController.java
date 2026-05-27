@@ -18,33 +18,34 @@ public class InventoryController {
 
     private final InventoryService inventoryService;
 
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
+    // 🔥 FIX: Broadened Authority Checks
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'CASHIER', 'ROLE_CASHIER')")
     @GetMapping("/product/{productId}")
     public ResponseEntity<InventoryResponse> getInventoryByProductId(@PathVariable Long productId) {
         return ResponseEntity.ok(inventoryService.getInventoryByProductId(productId));
     }
 
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'CASHIER', 'ROLE_CASHIER')")
     @GetMapping("/low-stock")
     public ResponseEntity<List<InventoryResponse>> getLowStock() {
         return ResponseEntity.ok(inventoryService.getLowStockProducts());
     }
 
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
     @PostMapping("/add/{productId}")
     public ResponseEntity<String> addStock(@PathVariable Long productId, @RequestParam BigDecimal quantity) {
         inventoryService.addStock(productId, quantity);
         return ResponseEntity.ok("Stock added successfully!");
     }
 
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
     @PostMapping("/reduce/{productId}")
     public ResponseEntity<String> reduceStock(@PathVariable Long productId, @RequestParam BigDecimal quantity) {
         inventoryService.reduceStock(productId, quantity);
         return ResponseEntity.ok("Stock reduced successfully!");
     }
 
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
     @PutMapping("/reorder-level/{productId}")
     public ResponseEntity<String> updateReorderLevel(@PathVariable Long productId, @RequestParam BigDecimal newLevel) {
         inventoryService.updateReorderLevel(productId, newLevel);

@@ -19,7 +19,11 @@ public class Inventory {
     private BigDecimal availableQuantity;
     private BigDecimal reorderLevel;
 
-    // 🔥 ENTERPRISE FIX: Optimistic Locking (Prevents 2 cashiers billing same item at exactly same millisecond)
+    // 🔥 THE MAGIC FIX: "columnDefinition" add panni pazhaya data-ku default 'false' set pandrom!
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private Boolean lowStockAlert = false;
+
     @Version
     private Long version;
 

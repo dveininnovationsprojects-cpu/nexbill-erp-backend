@@ -6,6 +6,7 @@ import com.example.billing_backend.model.Product;
 import com.example.billing_backend.repository.InventoryRepository;
 import com.example.billing_backend.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable; // 🔥 Added import for Pageable
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,7 +21,6 @@ public class InventoryServiceImpl implements InventoryService {
     private final InventoryRepository inventoryRepository;
     private final ProductRepository productRepository;
 
-    // Helper method to convert Entity to DTO
     private InventoryResponse mapToResponse(Inventory inv) {
         return InventoryResponse.builder()
                 .inventoryId(inv.getInventoryId())
@@ -33,10 +33,15 @@ public class InventoryServiceImpl implements InventoryService {
                 .build();
     }
 
+    private void updateAlertState(Inventory inv) {
+        boolean isLow = inv.getAvailableQuantity().compareTo(inv.getReorderLevel()) <= 0;
+        inv.setLowStockAlert(isLow);
+    }
+
     @Override
     @Transactional
     public void addStock(Long productId, BigDecimal quantity) {
-        if (quantity.compareTo(BigDecimal.ZERO) <= 0)
+        if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0)
             throw new RuntimeException("Quantity must be greater than zero");
 
         Inventory inv = inventoryRepository.findByProduct_Id(productId)
@@ -47,6 +52,7 @@ public class InventoryServiceImpl implements InventoryService {
                             .product(product)
                             .availableQuantity(BigDecimal.ZERO)
                             .reorderLevel(BigDecimal.valueOf(10.0))
+                            .lowStockAlert(true)
                             .build();
                 });
 
@@ -54,20 +60,19 @@ public class InventoryServiceImpl implements InventoryService {
             throw new RuntimeException("Cannot add stock to a deleted product!");
 
         inv.setAvailableQuantity(inv.getAvailableQuantity().add(quantity));
+        updateAlertState(inv);
         inventoryRepository.save(inv);
     }
 
     @Override
     @Transactional
     public void reduceStock(Long productId, BigDecimal quantity) {
-        // 🔥 FIX: Added Missing Validation
-        if (quantity.compareTo(BigDecimal.ZERO) <= 0)
+        if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0)
             throw new RuntimeException("Quantity must be greater than zero");
 
         Inventory inv = inventoryRepository.findByProduct_Id(productId)
                 .orElseThrow(() -> new RuntimeException("Inventory not found"));
 
-        // 🔥 FIX: Soft Delete Check
         if (inv.getProduct().isDeleted())
             throw new RuntimeException("Cannot reduce stock for a deleted product!");
 
@@ -75,6 +80,7 @@ public class InventoryServiceImpl implements InventoryService {
             throw new RuntimeException("Insufficient Stock!");
 
         inv.setAvailableQuantity(inv.getAvailableQuantity().subtract(quantity));
+        updateAlertState(inv);
         inventoryRepository.save(inv);
     }
 
@@ -87,7 +93,9 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     public List<InventoryResponse> getLowStockProducts() {
-        return inventoryRepository.findLowStockProducts().stream()
+        // 🔥 THE FIX: Pass Pageable.unpaged() to match the new repository method
+        return inventoryRepository.findLowStockProducts(Pageable.unpaged())
+                .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -95,7 +103,7 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     @Transactional
     public void updateReorderLevel(Long productId, BigDecimal newLevel) {
-        if (newLevel.compareTo(BigDecimal.ZERO) < 0)
+        if (newLevel == null || newLevel.compareTo(BigDecimal.ZERO) < 0)
             throw new RuntimeException("Reorder level cannot be negative");
 
         Inventory inv = inventoryRepository.findByProduct_Id(productId)
@@ -105,6 +113,7 @@ public class InventoryServiceImpl implements InventoryService {
             throw new RuntimeException("Cannot modify deleted product!");
 
         inv.setReorderLevel(newLevel);
+        updateAlertState(inv);
         inventoryRepository.save(inv);
     }
 }

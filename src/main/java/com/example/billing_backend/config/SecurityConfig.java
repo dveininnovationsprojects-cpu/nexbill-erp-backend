@@ -38,7 +38,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // Unga frontend URL (React/Vue)
+        // Frontend URL connection
         config.setAllowedOrigins(List.of("http://localhost:5173"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
@@ -61,21 +61,24 @@ public class SecurityConfig {
                         .accessDeniedHandler(customAccessDeniedHandler)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        // 1. Open Endpoints (Login/Register)
+                        // 1. Open Endpoints
                         .requestMatchers("/api/auth/**").permitAll()
 
-                        // 2. INVENTORY ROUTES (Inga explicit-aaga define pandrom!)
-                        // hasAuthority use panna, exact-aaga "ROLE_ADMIN" nu check pannum
-                        .requestMatchers("/api/inventory/add-stock").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers("/api/inventory/reorder-level/**").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers("/api/inventory/low-stock").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers("/api/inventory/product/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_CASHIER")
+                        // 2. STOCK ALERTS (Real-time monitoring)
+                        .requestMatchers("/api/stock-alerts/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "CASHIER", "ROLE_CASHIER")
 
-                        // 3. Other Routes
-                        .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers("/api/billing/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_CASHIER")
+                        // 3. INVENTORY MANAGEMENT
+                        .requestMatchers("/api/inventory/add/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
+                        .requestMatchers("/api/inventory/reduce/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "CASHIER", "ROLE_CASHIER")
+                        .requestMatchers("/api/inventory/reorder-level/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
+                        .requestMatchers("/api/inventory/low-stock").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "CASHIER", "ROLE_CASHIER")
+                        .requestMatchers("/api/inventory/product/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "CASHIER", "ROLE_CASHIER")
 
-                        // 4. Any other request must be authenticated
+                        // 4. ADMIN & BILLING ROUTES
+                        .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
+                        .requestMatchers("/api/billing/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "CASHIER", "ROLE_CASHIER")
+
+                        // 5. Secure all other requests
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
