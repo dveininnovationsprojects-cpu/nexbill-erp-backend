@@ -26,6 +26,8 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    // Add this line at the top parameter definitions inside your service classes
+    private final NotificationService notificationService;
     private final EmailService emailService;
 
     public AuthResponse register(RegisterRequest request) {
@@ -55,9 +57,11 @@ public class AuthenticationService {
                 .role(request.getRole())
                 .status(initialStatus)
                 .build();
-
         repository.save(user);
 
+        if (user.getRole() == Role.CASHIER) {
+            notificationService.triggerNewRegistrationAlertToAdmins(user);
+        }
         if (request.getRole() == Role.CASHIER) {
             return AuthResponse.builder()
                     .message("Registration successful. Waiting for Admin approval.")

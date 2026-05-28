@@ -17,16 +17,11 @@ import java.security.Principal;
 public class ProfileController {
 
     private final ProfileService profileService;
-
-    // 1. Current user avanga profile-ah view panrathuku
     @GetMapping("/me")
     @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER')")
     public ResponseEntity<ProfileResponseDto> getMyProfile(Principal principal) {
-        // Principal extracts the username (email) directly from the valid JWT Token
         return ResponseEntity.ok(profileService.getMyProfile(principal.getName()));
     }
-
-    // 2. Current user avanga own details-ah mathikurathuku (Email, Name, Password)
     @PutMapping("/update")
     @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER')")
     public ResponseEntity<ProfileResponseDto> updateMyProfile(
@@ -34,8 +29,6 @@ public class ProfileController {
             @RequestBody ProfileUpdateRequestDto request) {
         return ResponseEntity.ok(profileService.updateMyProfile(principal.getName(), request));
     }
-
-    // 3. Admin mattum matha staff-oda salary, timing and status-ah mathurathuku
     @PutMapping("/admin/staff/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProfileResponseDto> updateStaffDetailsByAdmin(

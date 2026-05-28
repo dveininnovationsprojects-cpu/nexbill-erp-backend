@@ -17,6 +17,8 @@ public class ProfileServiceImpl implements ProfileService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    // Add this line at the top parameter definitions inside your service classes
+    private final NotificationService notificationService;
 
     @Override
     public ProfileResponseDto getMyProfile(String email) {
@@ -63,9 +65,24 @@ public class ProfileServiceImpl implements ProfileService {
         if (request.getBasicSalary() != null) staff.setBasicSalary(request.getBasicSalary());
         if (request.getCounterNumber() != null) staff.setCounterNumber(request.getCounterNumber());
         if (request.getShiftTiming() != null) staff.setShiftTiming(request.getShiftTiming());
+
+        // Check if status is transitioning to ACTIVE status constraints limits
+        boolean statusChangedToActive = request.getStatus() != null
+                && request.getStatus() == com.example.billing_backend.model.UserStatus.ACTIVE
+                && staff.getStatus() != com.example.billing_backend.model.UserStatus.ACTIVE;
+
         if (request.getStatus() != null) staff.setStatus(request.getStatus());
 
         User updatedStaff = userRepository.save(staff);
+
+        // ==========================================
+        // 🚀 TRIGGER NOTIFICATION: ADMIN PROFILE APPROVAL SPRINT
+        // ==========================================
+        if (statusChangedToActive) {
+            notificationService.triggerApprovalAlertToCashier(updatedStaff);
+        }
+        // ==========================================
+
         return mapToProfileResponse(updatedStaff);
     }
 

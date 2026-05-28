@@ -1,5 +1,6 @@
 package com.example.billing_backend.repository;
 
+import com.example.billing_backend.dto.CategoryValuationDto;
 import com.example.billing_backend.model.Inventory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -50,4 +51,11 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
 
     @Query("SELECT COUNT(i) FROM Inventory i WHERE i.availableQuantity <= i.reorderLevel AND i.product.isDeleted = false")
     long countLowStockAlerts();
+    // Out of Stock Counter
+    @Query("SELECT COUNT(i) FROM Inventory i WHERE i.availableQuantity <= 0")
+    Long countOutOfStockItems();
+
+    // Category-wise Valuation Matrix
+    @Query("SELECT new com.example.billing_backend.dto.CategoryValuationDto(c.name, SUM(i.availableQuantity * p.purchasePrice)) FROM Inventory i JOIN i.product p JOIN p.category c GROUP BY c.name")
+    List<CategoryValuationDto> getCategoryValuations();
 }

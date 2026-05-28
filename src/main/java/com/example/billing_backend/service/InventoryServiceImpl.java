@@ -20,6 +20,8 @@ public class InventoryServiceImpl implements InventoryService {
 
     private final InventoryRepository inventoryRepository;
     private final ProductRepository productRepository;
+    // Add this line at the top parameter definitions inside your service classes
+    private final NotificationService notificationService;
 
     private InventoryResponse mapToResponse(Inventory inv) {
         return InventoryResponse.builder()
@@ -36,8 +38,18 @@ public class InventoryServiceImpl implements InventoryService {
     private void updateAlertState(Inventory inv) {
         boolean isLow = inv.getAvailableQuantity().compareTo(inv.getReorderLevel()) <= 0;
         inv.setLowStockAlert(isLow);
-    }
 
+        // ==========================================
+        // 🚀 TRIGGER NOTIFICATION: WAREHOUSE DROPPED TO MIN STOCK LEVEL
+        // ==========================================
+        if (isLow && !inv.getProduct().isDeleted()) {
+            notificationService.triggerLowStockAdminAlert(
+                    inv.getProduct().getName(),
+                    inv.getAvailableQuantity().intValue()
+            );
+        }
+        // ==========================================
+    }
     @Override
     @Transactional
     public void addStock(Long productId, BigDecimal quantity) {
