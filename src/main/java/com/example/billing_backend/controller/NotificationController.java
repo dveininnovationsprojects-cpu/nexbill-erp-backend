@@ -17,8 +17,6 @@ public class NotificationController {
 
     private final NotificationService notificationService;
 
-    // Both Admin and Cashier hit this same endpoint.
-    // The backend automatically filters based on their token!
     @GetMapping("/my-alerts")
     public ResponseEntity<List<Notification>> fetchAlerts(@AuthenticationPrincipal User currentUser) {
         return ResponseEntity.ok(notificationService.getMyNotifications(currentUser));
