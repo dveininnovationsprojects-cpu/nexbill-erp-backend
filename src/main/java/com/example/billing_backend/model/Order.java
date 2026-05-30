@@ -26,7 +26,7 @@ public class Order {
     private String invoiceNumber;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "customer_id") // Walk-in customer na null ah irukalam
+    @JoinColumn(name = "customer_id")
     private Customer customer;
 
     @ManyToOne(fetch = FetchType.EAGER)

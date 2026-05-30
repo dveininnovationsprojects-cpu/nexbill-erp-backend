@@ -28,7 +28,6 @@ public class OrderServiceImpl implements OrderService {
     private final InventoryService inventoryService;
     private final NotificationService notificationService;
 
-
     @Override
     @Transactional // Database fail aana rollback aaga
     public Order createOrder(OrderRequestDto request, String cashierEmail) {
@@ -37,17 +36,48 @@ public class OrderServiceImpl implements OrderService {
         User cashier = userRepository.findByEmail(cashierEmail)
                 .orElseThrow(() -> new RuntimeException("Cashier not found!"));
 
-        // 2. Fetch Customer (Optional)
+        // 2. Fetch Customer & Validate Business Rules
         Customer customer = null;
         if (request.getCustomerId() != null) {
+            // 🔥 FIX: Database-la irunthu first fetch pannanum!
             customer = customerRepository.findById(request.getCustomerId())
                     .orElseThrow(() -> new RuntimeException("Customer not found!"));
 
-            // AUTOMATION: Blacklist aana customer ku bill poda koodathu!
-            if(customer.getStatus() == CustomerStatus.BLACKLISTED) {
+            // Blacklist Validation
+            if (customer.getStatus() == CustomerStatus.BLACKLISTED) {
                 throw new RuntimeException("Cannot process bill. Customer is BLACKLISTED!");
             }
+
+            // Credit Limit Validation
+            if (request.getPaymentMode() == PaymentMode.CREDIT) {
+
+                double currentOutstanding = customer.getOutstandingDebt() != null ? customer.getOutstandingDebt() : 0.0;
+                double allowedLimit = customer.getCreditLimit() != null ? customer.getCreditLimit() : 0.0;
+
+                double currentOrderEstimate = 0.0;
+                for (OrderItemRequestDto itemDto : request.getItems()) {
+                    Product product = productRepository.findByIdAndIsDeletedFalse(itemDto.getProductId())
+                            .orElseThrow(() -> new RuntimeException("Product ID " + itemDto.getProductId() + " not found!"));
+
+                    double qty = itemDto.getQuantity().doubleValue();
+                    double price = product.getSellingPrice().doubleValue();
+                    double gst = product.getGstPercentage();
+
+                    double base = price * qty;
+                    double tax = (base * gst) / 100.0;
+                    currentOrderEstimate += (base + tax);
+                }
+
+                if (request.getDiscountAmount() != null) {
+                    currentOrderEstimate -= request.getDiscountAmount().doubleValue();
+                }
+
+                if ((currentOutstanding + currentOrderEstimate) > allowedLimit) {
+                    throw new RuntimeException("Credit limit exceeded! Please clear your previous outstanding dues before using credit payment mode again.");
+                }
+            }
         } else if (request.getPaymentMode() == PaymentMode.CREDIT) {
+            // Walk-in customer (no ID) cannot use credit
             throw new RuntimeException("Walk-in customers cannot use CREDIT payment mode!");
         }
 
@@ -61,7 +91,7 @@ public class OrderServiceImpl implements OrderService {
                 .customer(customer)
                 .cashier(cashier)
                 .paymentMode(request.getPaymentMode())
-                .externalTransactionRef(request.getExternalTransactionRef()) // 👈 INTA LINE-AH INJECT PANNUNGA!
+                .externalTransactionRef(request.getExternalTransactionRef())
                 .status(OrderStatus.COMPLETED)
                 .build();
 
@@ -108,9 +138,7 @@ public class OrderServiceImpl implements OrderService {
         // 6. Save Order to DB
         Order savedOrder = orderRepository.save(order);
 
-        // ==========================================
-        // 🚀 TRIGGER NOTIFICATION: HIGH TRANSACTION MONITORING RADAR FLAG
-        // ==========================================
+        // 7. Trigger Notification for High Value Sales
         if (savedOrder.getGrandTotal().doubleValue() >= 10000.00) {
             notificationService.triggerHighValueSaleAlert(
                     cashier.getName(),
@@ -118,11 +146,8 @@ public class OrderServiceImpl implements OrderService {
                     savedOrder.getGrandTotal().doubleValue()
             );
         }
-        // ==========================================
 
-        // 7. USER PROFILE SYNC (Cashier Stats Update) ... remaining profile increment code runs ...
-
-        // 7. USER PROFILE SYNC (Cashier Stats Update)
+        // 8. USER PROFILE SYNC (Cashier Stats Update)
         cashier.setTotalBillsGeneratedCount((cashier.getTotalBillsGeneratedCount() == null ? 0 : cashier.getTotalBillsGeneratedCount()) + 1);
         if (request.getPaymentMode() == PaymentMode.CASH) {
             Double currentCash = cashier.getTodaysCashCollected() == null ? 0.0 : cashier.getTodaysCashCollected();
@@ -130,6 +155,7 @@ public class OrderServiceImpl implements OrderService {
         }
         userRepository.save(cashier);
 
+        // 9. Customer Ledger Sync
         if (customer != null) {
             if (request.getPaymentMode() == PaymentMode.CREDIT) {
                 customerService.updateCustomerLedger(customer.getId(), grandTotal.doubleValue(), 0.0);

@@ -17,14 +17,11 @@ import java.security.Principal;
 public class OrderController {
 
     private final OrderService orderService;
-
     @PostMapping("/checkout")
     @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER')")
     public ResponseEntity<Order> processCheckout(
             @RequestBody OrderRequestDto request,
             Principal principal) {
-
-        // Principal extracts the currently logged-in Cashier's email
         Order savedOrder = orderService.createOrder(request, principal.getName());
         return new ResponseEntity<>(savedOrder, HttpStatus.CREATED);
     }

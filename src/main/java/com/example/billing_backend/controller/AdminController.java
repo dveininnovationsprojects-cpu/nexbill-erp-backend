@@ -46,4 +46,8 @@ public class AdminController {
     public ResponseEntity<List<User>> getActiveCashiers() {
         return ResponseEntity.ok(userRepository.findByRoleAndStatus(Role.CASHIER, UserStatus.ACTIVE));
     }
+    @GetMapping("/all-cashiers")
+    public ResponseEntity<List<User>> getAllCashiers() {
+        return ResponseEntity.ok(userRepository.findByRole(Role.CASHIER));
+    }
 }
