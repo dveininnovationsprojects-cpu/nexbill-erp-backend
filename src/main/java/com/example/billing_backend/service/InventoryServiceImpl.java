@@ -6,7 +6,7 @@ import com.example.billing_backend.model.Product;
 import com.example.billing_backend.repository.InventoryRepository;
 import com.example.billing_backend.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Pageable; // 🔥 Added import for Pageable
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -93,7 +93,6 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     public List<InventoryResponse> getLowStockProducts() {
-        // 🔥 THE FIX: Pass Pageable.unpaged() to match the new repository method
         return inventoryRepository.findLowStockProducts(Pageable.unpaged())
                 .stream()
                 .map(this::mapToResponse)

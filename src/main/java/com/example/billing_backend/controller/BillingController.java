@@ -1,0 +1,27 @@
+package com.example.billing_backend.controller;
+
+import com.example.billing_backend.dto.BillRequest;
+import com.example.billing_backend.dto.BillResponse;
+import com.example.billing_backend.service.BillingService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
+
+@RestController
+@RequestMapping("/api/billing")
+@CrossOrigin(origins = "http://localhost:5173")
+@RequiredArgsConstructor
+public class BillingController {
+
+    private final BillingService billingService;
+
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
+    @PostMapping("/checkout")
+    public ResponseEntity<BillResponse> checkout(Principal principal, @RequestBody BillRequest request) {
+        String cashierId = principal.getName();
+        return ResponseEntity.ok(billingService.checkout(cashierId, request));
+    }
+}
