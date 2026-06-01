@@ -41,4 +41,19 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             "FROM Order o JOIN o.cashier u WHERE o.createdAt BETWEEN :startDate AND :endDate AND o.status = 'COMPLETED' " +
             "GROUP BY u.name, u.email ORDER BY SUM(o.grandTotal) DESC")
     List<CashierPerformanceDto> getCashierPerformance(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    @Query("SELECT new com.example.billing_backend.dto.PaymentStatsResponse(o.paymentMode, SUM(o.grandTotal), COUNT(o)) " +
+            "FROM Order o " +
+            "WHERE o.createdAt >= :startDate AND o.createdAt <= :endDate " +
+            "GROUP BY o.paymentMode")
+    java.util.List<com.example.billing_backend.dto.PaymentStatsResponse> getPaymentAggregations(
+            @org.springframework.data.repository.query.Param("startDate") java.time.LocalDateTime startDate,
+            @org.springframework.data.repository.query.Param("endDate") java.time.LocalDateTime endDate
+    );
+
+    java.util.List<com.example.billing_backend.model.Order> findByPaymentModeAndCreatedAtBetweenOrderByCreatedAtDesc(
+            com.example.billing_backend.model.PaymentMode paymentMode,
+            java.time.LocalDateTime startDate,
+            java.time.LocalDateTime endDate
+    );
 }

@@ -38,6 +38,8 @@ public class AuthenticationService {
                     .build();
         }
 
+        validatePasswordStrength(request.getPassword());
+
         UserStatus initialStatus = UserStatus.PENDING;
 
         if (request.getRole() == Role.ADMIN) {
@@ -168,6 +170,7 @@ public class AuthenticationService {
             repository.save(user);
             throw new RuntimeException("Verification code expired!");
         }
+        validatePasswordStrength(request.getNewPassword());
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         user.setResetOtp(null);
@@ -189,5 +192,18 @@ public class AuthenticationService {
 
 
         repository.delete(user);
+    }
+    // 🔥 CENTRALIZED PASSWORD VALIDATOR GATEWAY
+    private void validatePasswordStrength(String password) {
+        if (password == null) {
+            throw new RuntimeException("Password cannot be empty!");
+        }
+
+        // Regex for: 1 Uppercase, 1 Digit, 1 Special Character, Min 8 Length
+        String regex = "^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\",./<>?]).{8,}$";
+
+        if (!password.matches(regex)) {
+            throw new RuntimeException("Password is too weak! It must be at least 8 characters long, contain at least one uppercase letter, one number, and one special character.");
+        }
     }
 }

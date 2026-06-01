@@ -50,6 +50,8 @@ public class ProfileServiceImpl implements ProfileService {
         }
 
         if (request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
+            validatePasswordStrength(request.getPassword());
+
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
 
@@ -100,5 +102,12 @@ public class ProfileServiceImpl implements ProfileService {
                 .shiftTiming(user.getShiftTiming())
                 .status(user.getStatus())
                 .build();
+    }
+    private void validatePasswordStrength(String password) {
+        if (password == null) return;
+        String regex = "^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\",./<>?]).{8,}$";
+        if (!password.matches(regex)) {
+            throw new RuntimeException("Password must be at least 8 characters long, containing 1 uppercase letter, 1 number, and 1 special character.");
+        }
     }
 }
