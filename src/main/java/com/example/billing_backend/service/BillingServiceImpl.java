@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -93,5 +94,20 @@ public class BillingServiceImpl implements BillingService {
                 .message("Bill generated securely with Lock and stock deducted!")
                 .timestamp(LocalDateTime.now())
                 .build();
+    }
+
+    // =========================================================
+    // 🔥 NEW ADDITIONS FOR BILLING HISTORY & REPRINT
+    // =========================================================
+
+    @Override
+    public Invoice getBillByInvoiceNumber(String invoiceNumber) {
+        return invoiceRepository.findByInvoiceNumber(invoiceNumber)
+                .orElseThrow(() -> new RuntimeException("Invoice not found: " + invoiceNumber));
+    }
+
+    @Override
+    public List<Invoice> getAllBills() {
+        return invoiceRepository.findAll();
     }
 }
