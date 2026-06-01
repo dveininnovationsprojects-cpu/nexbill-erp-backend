@@ -83,13 +83,17 @@ public class AuthenticationService {
             var user = repository.findByEmail(request.getEmail())
                     .orElseThrow(() -> new org.springframework.security.authentication.BadCredentialsException("Invalid email or password"));
 
-            if (user.getStatus() != UserStatus.ACTIVE) {
+            if (user.getStatus() == UserStatus.PENDING) {
                 return AuthResponse.builder()
                         .message("Account is not active. Please wait for Admin approval.")
                         .token(null)
                         .build();
+            } else if (user.getStatus() == UserStatus.SUSPENDED) {
+                return AuthResponse.builder()
+                        .message("You are suspended! Please contact the administrator to restore access.")
+                        .token(null)
+                        .build();
             }
-
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
             );
