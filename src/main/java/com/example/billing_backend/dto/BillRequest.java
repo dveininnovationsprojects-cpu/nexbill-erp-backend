@@ -4,5 +4,10 @@ import lombok.Data;
 
 @Data
 public class BillRequest {
-    private String paymentMethod; // e.g., "CASH", "UPI", "CARD"
+    private String paymentMethod;
+
+    // 🔥 FIX: Frontend anuppura puthu Customer fields!
+    private String customerName;
+    private String customerPhone;
+    private Long customerId; // Future use-kaga
 }

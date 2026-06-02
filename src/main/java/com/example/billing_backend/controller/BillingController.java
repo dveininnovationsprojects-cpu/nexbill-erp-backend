@@ -7,6 +7,7 @@ import com.example.billing_backend.service.BillingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -34,11 +35,16 @@ public class BillingController {
         return ResponseEntity.ok(billingService.getBillByInvoiceNumber(invoiceNumber));
     }
 
-    // 🔥 Get All Bills (Admin Only)
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    // =========================================================
+    // 🔥 FRONTEND ISSUE 5 FIX: Both Admin & Cashier can access their respective histories
+    // =========================================================
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')") // Changed from just ROLE_ADMIN
     @GetMapping("/history")
-    public ResponseEntity<List<Invoice>> getAllBills() {
-        return ResponseEntity.ok(billingService.getAllBills());
+    public ResponseEntity<List<Invoice>> getAllBills(Principal principal) {
+        // Fetch user authorities from SecurityContext to pass the role
+        String role = SecurityContextHolder.getContext().getAuthentication().getAuthorities().toString();
+
+        return ResponseEntity.ok(billingService.getAllBillsForUser(principal.getName(), role));
     }
 
     // =========================================================
