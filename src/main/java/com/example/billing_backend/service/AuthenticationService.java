@@ -15,7 +15,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
 import java.time.Instant;
 
 @Service
@@ -26,7 +25,6 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-    // Add this line at the top parameter definitions inside your service classes
     private final NotificationService notificationService;
     private final EmailService emailService;
 
@@ -37,11 +35,8 @@ public class AuthenticationService {
                     .token(null)
                     .build();
         }
-
         validatePasswordStrength(request.getPassword());
-
         UserStatus initialStatus = UserStatus.PENDING;
-
         if (request.getRole() == Role.ADMIN) {
             if (request.getAdminSecretKey() == null || !request.getAdminSecretKey().equals("DVEIN_SUPER_SECRET_KEY_123")) {
                 return AuthResponse.builder()
@@ -51,7 +46,6 @@ public class AuthenticationService {
             }
             initialStatus = UserStatus.ACTIVE;
         }
-
         var user = User.builder()
                 .name(request.getName())
                 .email(request.getEmail())
@@ -70,19 +64,16 @@ public class AuthenticationService {
                     .token(null)
                     .build();
         }
-
         var jwtToken = jwtService.generateToken(user);
         return AuthResponse.builder()
                 .message("Admin Registration successful")
                 .token(jwtToken)
                 .build();
     }
-
     public AuthResponse authenticate(AuthRequest request) {
         try {
             var user = repository.findByEmail(request.getEmail())
                     .orElseThrow(() -> new org.springframework.security.authentication.BadCredentialsException("Invalid email or password"));
-
             if (user.getStatus() == UserStatus.PENDING) {
                 return AuthResponse.builder()
                         .message("Account is not active. Please wait for Admin approval.")
@@ -159,7 +150,6 @@ public class AuthenticationService {
                 .token(null)
                 .build();
     }
-
     public AuthResponse resetPassword(com.example.billing_backend.dto.PasswordResetDto request) {
         var user = repository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User account not found!"));
@@ -193,19 +183,13 @@ public class AuthenticationService {
         if (refreshTokenRepository != null) {
             refreshTokenRepository.deleteByUser(user);
         }
-
-
         repository.delete(user);
     }
-    // 🔥 CENTRALIZED PASSWORD VALIDATOR GATEWAY
     private void validatePasswordStrength(String password) {
         if (password == null) {
             throw new RuntimeException("Password cannot be empty!");
         }
-
-        // Regex for: 1 Uppercase, 1 Digit, 1 Special Character, Min 8 Length
         String regex = "^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\",./<>?]).{8,}$";
-
         if (!password.matches(regex)) {
             throw new RuntimeException("Password is too weak! It must be at least 8 characters long, contain at least one uppercase letter, one number, and one special character.");
         }

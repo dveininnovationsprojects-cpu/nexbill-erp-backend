@@ -13,11 +13,10 @@ import java.util.Optional;
 
 public interface CustomerRepository extends JpaRepository<Customer, Integer> {
     Optional<Customer> findByMobile(String mobile);
-    // Top VIP Customers
+
     @Query("SELECT new com.example.billing_backend.dto.CustomerInsightDto(c.name, c.mobile, c.totalSpentAmount) FROM Customer c ORDER BY c.totalSpentAmount DESC")
     List<CustomerInsightDto> findTopSpenders(Pageable pageable);
 
-    // New Customer Acquisition Graph
     @Query("SELECT COUNT(c) FROM Customer c WHERE c.createdAt BETWEEN :startDate AND :endDate")
     Long countNewAcquisitions(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 }
