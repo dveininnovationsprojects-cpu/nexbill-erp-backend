@@ -86,13 +86,62 @@ public class NotificationServiceImpl implements NotificationService {
         return notificationRepository.countMyUnreadAlerts(user.getRole(), user.getId());
     }
 
+
     @Override
+    @org.springframework.transaction.annotation.Transactional // MUST add this for DML operations
     public void readAlert(Long id) {
-        notificationRepository.markSingleAsRead(id);
+        // We delete it entirely from DB when marked as read
+        notificationRepository.deleteSingleAlert(id);
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional // MUST add this for DML operations
     public void readAllMyAlerts(User user) {
-        notificationRepository.markAllAsReadForMyProfile(user.getRole(), user.getId());
+        // We clear all alerts targeted to this user/role from DB
+        notificationRepository.deleteAllMyAlerts(user.getRole(), user.getId());
+    }
+// =========================================================================
+    // 🔥 NEW MISSING METHODS IMPLEMENTATION
+    // =========================================================================
+
+    @Override
+    public void blastAnnouncementToCashiers(String title, String message) {
+        Notification alert = Notification.builder()
+                .title(title)
+                .message(message)
+                .type(NotificationType.SYSTEM_UPDATE)
+                .targetedRole(Role.CASHIER) // Targets all active cashiers
+                .createdAt(LocalDateTime.now())
+                .isRead(false)
+                .build();
+        notificationRepository.save(alert);
+    }
+
+    @Override
+    public void triggerLowStockAlert(String productName, double currentStock) {
+        Notification alert = Notification.builder()
+                .title("Critical Low Stock Alert")
+                .message("Product '" + productName + "' has dropped to " + currentStock + " units. Please restock immediately.")
+                .type(NotificationType.LOW_STOCK_ALERT)
+                .targetedRole(Role.ADMIN) // Alerts the admin to buy stock
+                .targetedUser(null)
+                .createdAt(LocalDateTime.now())
+                .isRead(false)
+                .build();
+        notificationRepository.save(alert);
+    }
+
+    @Override
+    public void sendDirectNotification(User targetedUser, String title, String message) {
+        Notification alert = Notification.builder()
+                .title(title)
+                .message(message)
+                .type(NotificationType.SYSTEM_UPDATE) // General specific alert
+                .targetedRole(null)
+                .targetedUser(targetedUser) // Targets ONLY this specific user (e.g., Profile Update)
+                .createdAt(LocalDateTime.now())
+                .isRead(false)
+                .build();
+        notificationRepository.save(alert);
     }
 }

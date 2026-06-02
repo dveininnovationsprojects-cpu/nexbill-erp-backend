@@ -19,7 +19,7 @@ public class Inventory {
     private BigDecimal availableQuantity;
     private BigDecimal reorderLevel;
 
-    // 🔥 THE MAGIC FIX: "columnDefinition" add panni pazhaya data-ku default 'false' set pandrom!
+
     @Column(nullable = false, columnDefinition = "boolean default false")
     @Builder.Default
     private Boolean lowStockAlert = false;

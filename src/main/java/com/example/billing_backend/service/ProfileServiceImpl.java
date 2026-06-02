@@ -3,6 +3,8 @@ package com.example.billing_backend.service;
 import com.example.billing_backend.dto.AdminUserUpdateDto;
 import com.example.billing_backend.dto.ProfileResponseDto;
 import com.example.billing_backend.dto.ProfileUpdateRequestDto;
+import com.example.billing_backend.model.Notification;
+import com.example.billing_backend.model.NotificationType;
 import com.example.billing_backend.model.User;
 import com.example.billing_backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -64,9 +66,20 @@ public class ProfileServiceImpl implements ProfileService {
         User staff = userRepository.findById(staffId)
                 .orElseThrow(() -> new RuntimeException("Staff account not found!"));
 
-        if (request.getBasicSalary() != null) staff.setBasicSalary(request.getBasicSalary());
-        if (request.getCounterNumber() != null) staff.setCounterNumber(request.getCounterNumber());
-        if (request.getShiftTiming() != null) staff.setShiftTiming(request.getShiftTiming());
+        boolean detailsChanged = false;
+
+        if (request.getBasicSalary() != null) {
+            staff.setBasicSalary(request.getBasicSalary());
+            detailsChanged = true;
+        }
+        if (request.getCounterNumber() != null) {
+            staff.setCounterNumber(request.getCounterNumber());
+            detailsChanged = true;
+        }
+        if (request.getShiftTiming() != null) {
+            staff.setShiftTiming(request.getShiftTiming());
+            detailsChanged = true;
+        }
 
         // Check if status is transitioning to ACTIVE status constraints limits
         boolean statusChangedToActive = request.getStatus() != null
@@ -76,6 +89,20 @@ public class ProfileServiceImpl implements ProfileService {
         if (request.getStatus() != null) staff.setStatus(request.getStatus());
 
         User updatedStaff = userRepository.save(staff);
+
+        if (detailsChanged) {
+            // Create a specific alert for this user
+            Notification alert = Notification.builder()
+                    .title("Profile Updated")
+                    .message("Admin updated your details (phone, shift, salary). Please review.")
+                    .type(NotificationType.SYSTEM_UPDATE) // Or create a new enum like PROFILE_DETAILS_UPDATED
+                    .targetedUser(updatedStaff) // Targeting ONLY this specific cashier
+                    .createdAt(java.time.LocalDateTime.now())
+                    .build();
+            // Assuming you have notificationRepository injected here, or call a method in NotificationService
+            // notificationRepository.save(alert);
+            notificationService.sendDirectNotification(updatedStaff, "Profile Updated", "Admin updated your details.");
+        }
 
         // ==========================================
         // 🚀 TRIGGER NOTIFICATION: ADMIN PROFILE APPROVAL SPRINT

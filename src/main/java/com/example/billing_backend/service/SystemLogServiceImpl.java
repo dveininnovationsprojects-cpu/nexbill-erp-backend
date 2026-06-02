@@ -1,7 +1,7 @@
 package com.example.billing_backend.service;
 
-import com.example.billing_backend.enums.ActionType;
-import com.example.billing_backend.enums.ModuleName;
+import com.example.billing_backend.model.enums.ActionType;
+import com.example.billing_backend.model.enums.ModuleName;
 import com.example.billing_backend.model.SystemLog;
 import com.example.billing_backend.repository.SystemLogRepository;
 import lombok.RequiredArgsConstructor;

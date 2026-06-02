@@ -21,7 +21,6 @@ public class StockAlertServiceImpl implements StockAlertService {
         BigDecimal qty = inv.getAvailableQuantity();
         BigDecimal reorder = inv.getReorderLevel();
 
-        // 🔥 Enterprise Fix: Precise Status Logic
         String alertStatus;
         if (qty.compareTo(BigDecimal.ZERO) == 0) {
             alertStatus = "OUT OF STOCK";

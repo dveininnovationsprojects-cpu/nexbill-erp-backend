@@ -104,8 +104,17 @@ public class InventoryServiceImpl implements InventoryService {
         }
 
         inv.setAvailableQuantity(inv.getAvailableQuantity().subtract(quantity));
-        updateAlertState(inv); // Automatic low-stock checking logic triggered cleanly
+        updateAlertState(inv);
         inventoryRepository.save(inv);
+
+        // 🔥 NEW AUTOMATION: Trigger Low Stock Alert
+        if (inv.getAvailableQuantity().compareTo(inv.getReorderLevel()) <= 0) {
+            // Unakku eppadi message venumo appadi format panniko
+            String message = "Only " + inv.getAvailableQuantity() + " units left for " + inv.getProduct().getName() + "!";
+
+            // Calling our Notification Service to blast the alert
+            notificationService.triggerLowStockAlert(inv.getProduct().getName(), inv.getAvailableQuantity().doubleValue());
+        }
     }
     @Override
     public InventoryResponse getInventoryByProductId(Long productId) {

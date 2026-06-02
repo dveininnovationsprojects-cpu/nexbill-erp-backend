@@ -21,19 +21,13 @@ import java.util.UUID;
 public class FileServiceImpl implements FileService {
 
     private final FileMetadataRepository fileRepository;
-
-    // Local Storage Directory Name
     private final String UPLOAD_DIR = "uploads";
     private final Path fileStorageLocation = Paths.get(UPLOAD_DIR).toAbsolutePath().normalize();
-
-    // Allowed File Types (Validation)
     private final List<String> ALLOWED_TYPES = Arrays.asList(
             "image/jpeg", "image/png", "image/jpg",
             "application/pdf",
             "text/csv", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
-
-    // Creates the "uploads" folder on server startup if it doesn't exist
     @PostConstruct
     public void init() {
         try {

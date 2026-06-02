@@ -11,6 +11,11 @@ public interface NotificationService {
     void triggerLowStockAdminAlert(String productName, int currentStock);
     void triggerHighValueSaleAlert(String cashierName, String invoiceNo, double amount);
 
+    // 🔥 NEW MISSING METHODS ADDED HERE
+    void blastAnnouncementToCashiers(String title, String message);
+    void triggerLowStockAlert(String productName, double currentStock);
+    void sendDirectNotification(User targetedUser, String title, String message);
+
     // Fetchers
     List<Notification> getMyNotifications(User user);
     Long getUnreadCount(User user);

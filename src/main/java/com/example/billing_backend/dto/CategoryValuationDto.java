@@ -9,4 +9,3 @@ public class CategoryValuationDto {
     private String categoryName;
     private BigDecimal totalValuation;
 }
-

@@ -1,6 +1,6 @@
 package com.example.billing_backend.repository;
 
-import com.example.billing_backend.enums.ModuleName;
+import com.example.billing_backend.model.enums.ModuleName;
 import com.example.billing_backend.model.SystemLog;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

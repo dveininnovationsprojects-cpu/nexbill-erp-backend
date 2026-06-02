@@ -5,6 +5,8 @@ import com.example.billing_backend.model.Role;
 import com.example.billing_backend.model.User;
 import com.example.billing_backend.model.UserStatus;
 import com.example.billing_backend.repository.UserRepository;
+import com.example.billing_backend.service.NotificationService;
+import com.example.billing_backend.service.NotificationServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +19,7 @@ import java.util.List;
 public class AdminController {
 
     private final UserRepository userRepository;
+    private final NotificationServiceImpl notificationService;
 
     @GetMapping("/pending-cashiers")
     public ResponseEntity<List<User>> getPendingCashiers() {
@@ -65,5 +68,14 @@ public class AdminController {
         cashier.setStatus(status);
         userRepository.save(cashier);
         return ResponseEntity.ok("Cashier status updated successfully to: " + status);
+    }
+    @PostMapping("/broadcast")
+    // @PreAuthorize("hasRole('ADMIN')") // Uncomment if using Spring Security method security
+    public ResponseEntity<String> broadcastAnnouncement(@RequestBody com.example.billing_backend.dto.AnnouncementRequest request) {
+
+        // This will create a notification targeted at ROLE_CASHIER
+        notificationService.blastAnnouncementToCashiers(request.getTitle(), request.getMessage());
+
+        return ResponseEntity.ok("Announcement broadcasted successfully to all cashiers.");
     }
 }

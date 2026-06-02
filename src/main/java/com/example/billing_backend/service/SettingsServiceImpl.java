@@ -19,7 +19,6 @@ public class SettingsServiceImpl implements SettingsService {
     private final SettingsRepository settingsRepository;
     private final SettingsAuditLogRepository auditLogRepository;
 
-    // 🔥 Step 1: System Initialization
     @PostConstruct
     public void initDefaultSettings() {
         if (!settingsRepository.existsById(1L)) {
@@ -49,30 +48,22 @@ public class SettingsServiceImpl implements SettingsService {
     @Transactional
     public SystemSettings updateSettings(SettingsRequest request, String updatedBy) {
         SystemSettings current = getSettings();
-
-        // 🔥 Rule 2: Valid GST Format Check (Standard Indian GSTIN Regex)
         String gstRegex = "^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$";
         if (request.getGstNumber() != null && !request.getGstNumber().matches(gstRegex)) {
             throw new RuntimeException("Invalid GST Number format!");
         }
 
-        // 🔥 Rule 3: Invoice Prefix Check
         if (request.getInvoicePrefix() == null || request.getInvoicePrefix().trim().isEmpty()) {
             throw new RuntimeException("Invoice Prefix cannot be empty!");
         }
 
-        // 🔥 Rule 4: Low Stock Validations
         if (request.getDefaultReorderLevel() < 0) {
             throw new RuntimeException("Default Reorder Level cannot be negative!");
         }
-
-        // 🔥 Rule 5: Generating Audit Log string
         StringBuilder changes = new StringBuilder("Updated: ");
         if (!current.getCompanyName().equals(request.getCompanyName())) changes.append("Company Name, ");
         if (!current.getGstNumber().equals(request.getGstNumber())) changes.append("GST Number, ");
         if (current.getDefaultReorderLevel() != request.getDefaultReorderLevel()) changes.append("Reorder Level, ");
-
-        // Update values
         current.setCompanyName(request.getCompanyName());
         current.setCompanyAddress(request.getCompanyAddress());
         current.setCompanyPhone(request.getCompanyPhone());
@@ -86,7 +77,6 @@ public class SettingsServiceImpl implements SettingsService {
 
         SystemSettings updatedSettings = settingsRepository.save(current);
 
-        // Save Audit Log
         SettingsAuditLog log = SettingsAuditLog.builder()
                 .updatedBy(updatedBy)
                 .changesSummary(changes.toString().endsWith(", ") ? changes.substring(0, changes.length() - 2) : "Minor fixes")

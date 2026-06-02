@@ -1,7 +1,7 @@
 package com.example.billing_backend.model;
 
-import com.example.billing_backend.enums.ActionType;
-import com.example.billing_backend.enums.ModuleName;
+import com.example.billing_backend.model.enums.ActionType;
+import com.example.billing_backend.model.enums.ModuleName;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
