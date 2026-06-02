@@ -9,41 +9,38 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/stock-alerts")
-@CrossOrigin(origins = "http://localhost:5173") // 🔥 Enterprise Fix: Production Safe CORS
+@RequestMapping("/api/alerts")
+@CrossOrigin(origins = "http://localhost:5173")
 @RequiredArgsConstructor
 public class StockAlertController {
 
     private final StockAlertService stockAlertService;
 
-    // 🔥 Enterprise Fix: Standardized Roles
+    // 🔥 Requires Token & Role matching
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
     @GetMapping("/low-stock")
-    public ResponseEntity<Page<StockAlertResponse>> getLowStockAlerts(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+    public ResponseEntity<Page<StockAlertResponse>> getLowStock(@RequestParam(defaultValue = "0") int page,
+                                                                @RequestParam(defaultValue = "10") int size) {
         return ResponseEntity.ok(stockAlertService.getLowStockAlerts(page, size));
     }
 
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
     @GetMapping("/out-of-stock")
-    public ResponseEntity<Page<StockAlertResponse>> getOutOfStockAlerts(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+    public ResponseEntity<Page<StockAlertResponse>> getOutOfStock(@RequestParam(defaultValue = "0") int page,
+                                                                  @RequestParam(defaultValue = "10") int size) {
         return ResponseEntity.ok(stockAlertService.getOutOfStockAlerts(page, size));
     }
 
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
-    @GetMapping("/critical-stock")
-    public ResponseEntity<Page<StockAlertResponse>> getCriticalStockAlerts(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+    @GetMapping("/critical")
+    public ResponseEntity<Page<StockAlertResponse>> getCriticalStock(@RequestParam(defaultValue = "0") int page,
+                                                                     @RequestParam(defaultValue = "10") int size) {
         return ResponseEntity.ok(stockAlertService.getCriticalStockAlerts(page, size));
     }
 
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
     @GetMapping("/count")
-    public ResponseEntity<Long> getAlertCount() {
+    public ResponseEntity<Long> getLowStockCount() {
         return ResponseEntity.ok(stockAlertService.getLowStockCount());
     }
 }
