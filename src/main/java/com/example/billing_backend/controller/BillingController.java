@@ -27,17 +27,30 @@ public class BillingController {
         return ResponseEntity.ok(billingService.checkout(cashierId, request));
     }
 
-    // 🔥 PUDHUSA ADD PANNADHU: Get Specific Bill
+    // 🔥 Get Specific Bill
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
     @GetMapping("/{invoiceNumber}")
     public ResponseEntity<Invoice> getBill(@PathVariable String invoiceNumber) {
         return ResponseEntity.ok(billingService.getBillByInvoiceNumber(invoiceNumber));
     }
 
-    // 🔥 PUDHUSA ADD PANNADHU: Get All Bills (Admin Only access is better here)
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
+    // 🔥 Get All Bills (Admin Only)
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @GetMapping("/history")
     public ResponseEntity<List<Invoice>> getAllBills() {
         return ResponseEntity.ok(billingService.getAllBills());
+    }
+
+    // =========================================================
+    // 🔥 CANCEL / SOFT DELETE INVOICE & RESTOCK (Admin Only)
+    // =========================================================
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PutMapping("/cancel/{invoiceNumber}")
+    public ResponseEntity<String> cancelInvoice(
+            @PathVariable String invoiceNumber,
+            Principal principal) {
+
+        String responseMessage = billingService.cancelInvoice(invoiceNumber, principal.getName());
+        return ResponseEntity.ok(responseMessage);
     }
 }

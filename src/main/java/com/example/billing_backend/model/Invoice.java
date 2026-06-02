@@ -21,6 +21,18 @@ public class Invoice {
     @Column(nullable = false)
     private String cashierId;
 
+    // ==========================================
+    // 🔥 PUDHUSA ADD PANNA FIELDS (For PDF & Audit)
+    // ==========================================
+    private String customerName;
+
+    private String customerPhone;
+
+    @Column(nullable = false)
+    @Builder.Default // 🔥 Lombok Builder use pannumbodhu default value apply aaga idhu romba mukkiyam!
+    private String status = "COMPLETED"; // Status can be 'COMPLETED' or 'CANCELLED'
+    // ==========================================
+
     private int totalItems;
     private BigDecimal totalQuantity;
     private BigDecimal subtotal;

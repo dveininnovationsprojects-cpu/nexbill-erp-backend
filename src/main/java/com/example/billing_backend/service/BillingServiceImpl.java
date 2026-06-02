@@ -97,7 +97,7 @@ public class BillingServiceImpl implements BillingService {
     }
 
     // =========================================================
-    // 🔥 NEW ADDITIONS FOR BILLING HISTORY & REPRINT
+    // 🔥 ADDITIONS FOR BILLING HISTORY & REPRINT
     // =========================================================
 
     @Override
@@ -109,5 +109,46 @@ public class BillingServiceImpl implements BillingService {
     @Override
     public List<Invoice> getAllBills() {
         return invoiceRepository.findAll();
+    }
+
+    // =========================================================
+    // 🔥 NEW ADDITION: CANCEL INVOICE & RESTOCK LOGIC
+    // =========================================================
+
+    @Override
+    @Transactional
+    public String cancelInvoice(String invoiceNumber, String cancelledBy) {
+
+        // 1. Find the Invoice
+        Invoice invoice = invoiceRepository.findByInvoiceNumber(invoiceNumber)
+                .orElseThrow(() -> new RuntimeException("Invoice not found: " + invoiceNumber));
+
+        // 2. Validation: Check if already cancelled
+        if ("CANCELLED".equalsIgnoreCase(invoice.getStatus())) {
+            throw new RuntimeException("This invoice is already cancelled!");
+        }
+
+        // 3. Restock the Inventory using Pessimistic Lock for safety
+        for (InvoiceItem item : invoice.getItems()) {
+            Inventory inv = inventoryRepository.findByProduct_IdForUpdate(item.getProductId())
+                    .orElseThrow(() -> new RuntimeException("Inventory not found for restocking product: " + item.getProductName()));
+
+            // Add the returned quantity back to available stock
+            inv.setAvailableQuantity(inv.getAvailableQuantity().add(item.getQuantity()));
+
+            // Re-evaluate low stock alert after restocking
+            boolean isLow = inv.getAvailableQuantity().compareTo(inv.getReorderLevel()) <= 0;
+            inv.setLowStockAlert(isLow);
+
+            inventoryRepository.save(inv);
+        }
+
+        // 4. Update Invoice Status
+        invoice.setStatus("CANCELLED");
+        // Note: If you added a 'cancelledBy' field in Invoice.java later, you can set it here.
+
+        invoiceRepository.save(invoice);
+
+        return "Invoice " + invoiceNumber + " has been successfully CANCELLED and stock has been restored!";
     }
 }
