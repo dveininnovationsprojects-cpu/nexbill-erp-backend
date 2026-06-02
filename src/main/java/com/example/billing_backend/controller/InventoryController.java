@@ -17,8 +17,6 @@ import java.util.List;
 public class InventoryController {
 
     private final InventoryService inventoryService;
-
-    // 🔥 FIX: Broadened Authority Checks
     @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'CASHIER', 'ROLE_CASHIER')")
     @GetMapping("/product/{productId}")
     public ResponseEntity<InventoryResponse> getInventoryByProductId(@PathVariable Long productId) {

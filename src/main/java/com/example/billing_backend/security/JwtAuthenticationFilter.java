@@ -57,13 +57,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // 🔥 THE FIX: Token Expire aagi irundha, thelivaana error message anuppuvom
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"TOKEN_EXPIRED\", \"message\": \"Token expire aagiduchu mamey! Please hit POST /login again to get a new fresh token.\"}");
+            response.getWriter().write("{\"error\": \"TOKEN_EXPIRED\", \"message\": \"Token expired!\"}");
             return;
         } catch (Exception e) {
             // 🔥 THE FIX: Token thappa irundha (illa pathi copy aagirundha)
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"INVALID_TOKEN\", \"message\": \"Token thappa irukku! Postman Headers tab-la duplicate Authorization irukka nu check pannunga.\"}");
+            response.getWriter().write("{\"error\": \"INVALID_TOKEN\", \"message\": \"Token is Wrong\"}");
             return;
         }
 

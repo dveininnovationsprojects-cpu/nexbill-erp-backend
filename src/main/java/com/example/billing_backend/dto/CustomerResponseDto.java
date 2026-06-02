@@ -19,4 +19,6 @@ public class CustomerResponseDto {
     private Double totalSpentAmount;
     private Double creditLimit;
     private Double outstandingDebt;
+    private com.example.billing_backend.model.CustomerStatus status;
+    private java.time.LocalDateTime lastCreditDateTime;
 }

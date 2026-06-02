@@ -223,7 +223,6 @@ public class ProductServiceImpl implements ProductService {
                         productRepository.save(product);
                     }
 
-                    // Ippo quantity BigDecimal-aaga irukkara kaaranathinaala error varadhu!
                     inventoryService.addStock(product.getId(), quantity);
                 }
             }

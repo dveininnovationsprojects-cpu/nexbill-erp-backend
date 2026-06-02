@@ -43,7 +43,6 @@ public class JwtService {
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
-
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
         return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
@@ -62,17 +61,15 @@ public class JwtService {
     }
 
     private Key getSignInKey() {
-        // Properties file-la irundhu key varala na, fallback for safety
         byte[] keyBytes = Decoders.BASE64.decode(secretKey != null ? secretKey : "5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437");
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    // Navin add panna pudhu method (Clean imports-oda integrate panniyachu)
     public String generateRefreshToken(UserDetails userDetails) {
         return Jwts.builder()
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 7)) // 7 days expiration
+                .setExpiration(new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 7))
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
