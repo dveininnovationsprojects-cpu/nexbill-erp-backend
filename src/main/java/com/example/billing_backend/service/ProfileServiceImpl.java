@@ -68,6 +68,11 @@ public class ProfileServiceImpl implements ProfileService {
 
         boolean detailsChanged = false;
 
+        if (request.getBranch() != null && !request.getBranch().trim().isEmpty()) {
+            staff.setBranch(request.getBranch());
+            detailsChanged = true;
+        }
+
         if (request.getBasicSalary() != null) {
             staff.setBasicSalary(request.getBasicSalary());
             detailsChanged = true;

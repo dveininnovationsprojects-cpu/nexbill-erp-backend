@@ -15,4 +15,5 @@ public class AdminUserUpdateDto {
     private String counterNumber;
     private String shiftTiming;
     private UserStatus status;
+    private String branch;
 }
