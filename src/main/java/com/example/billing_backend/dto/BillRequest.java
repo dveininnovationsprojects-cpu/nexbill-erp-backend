@@ -6,8 +6,12 @@ import lombok.Data;
 public class BillRequest {
     private String paymentMethod;
 
-    // 🔥 FIX: Frontend anuppura puthu Customer fields!
+    // Frontend anuppura Customer details
     private String customerName;
     private String customerPhone;
+
+    // 🔥 IDHU THAAN MISSING! Indha line add aanadhum error parandhidum.
+    private String customerEmail;
+
     private Long customerId; // Future use-kaga
 }

@@ -10,28 +10,43 @@ import java.time.LocalDateTime;
 public class SystemSettings {
 
     @Id
-    private Long id; // Always 1 (Single Row Architecture)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column(nullable = false)
+    // 🔥 BUSINESS PROFILE
     private String companyName;
-
-    private String companyAddress;
-    private String companyPhone;
+    private String tagline;
     private String companyEmail;
-
-    @Column(nullable = false)
+    private String companyPhone;
+    private String website;
+    private String companyAddress;
+    private String city;
+    private String state;
+    private String pinCode;
     private String gstNumber;
-
-    @Column(nullable = false)
-    private String invoicePrefix;
-
-    @Column(nullable = false)
-    private String currency;
-
-    @Column(nullable = false)
-    private int defaultReorderLevel;
-
+    private String panNumber;
+    private String cin;
     private String logoUrl;
 
+    // 🔥 INVOICE SETTINGS
+    private String invoicePrefix;
+    private Long startingNumber;
+    private Integer paymentDueDays;
+    private String currency;
+    private String dateFormat;
+    @Column(columnDefinition = "TEXT")
+    private String defaultPaymentTerms;
+    @Column(columnDefinition = "TEXT")
+    private String invoiceFooterNote;
+
+    // 🔥 DISPLAY OPTIONS (TOGGLES)
+    private Boolean showCompanyLogo;
+    private Boolean showGstBreakdown;
+    private Boolean showSignatureArea;
+    private Boolean showPaymentQrCode;
+    private Boolean showBankTransferDetails;
+    private Boolean showTermsAndConditions;
+
+    private int defaultReorderLevel;
     private LocalDateTime updatedAt;
 }

@@ -28,9 +28,12 @@ public class Invoice {
     private String customerName;
     private String customerPhone;
 
+    // 🔥 PUDHUSA ADD PANNA VENDIYA FIELD FOR FRONTEND (Issue 1)
+    private String customerEmail;
+
     @Column(nullable = false)
-    @Builder.Default // 🔥 Lombok Builder use pannumbodhu default value apply aaga
-    private String status = "COMPLETED"; // Status can be 'COMPLETED' or 'CANCELLED'
+    @Builder.Default
+    private String status = "COMPLETED";
 
     // ==========================================
     // 🔥 BILLING MATH DETAILS
@@ -47,12 +50,10 @@ public class Invoice {
     @Column(nullable = false)
     private String paymentMethod;
 
-    // 🔥 FIX: Builder use pannumbodhu item list null aagama irukka Default empty array!
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private List<InvoiceItem> items = new ArrayList<>();
 
-    // 🔥 FIX: Once generate aana bill date maara koodadhu (updatable = false)
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

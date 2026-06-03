@@ -39,7 +39,7 @@ public class BillingServiceImpl implements BillingService {
 
         String invoiceNumber = "INV-" + LocalDateTime.now().getYear() + "-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
 
-        // 🔥 FRONTEND ISSUE 2 FIX: Ensure Grand Total is mathematically correct
+        // 🔥 Ensure Grand Total is mathematically correct
         BigDecimal calculatedGrandTotal = cartSummary.getSubtotal()
                 .add(cartSummary.getGstTotal())
                 .subtract(cartSummary.getDiscountTotal());
@@ -52,15 +52,21 @@ public class BillingServiceImpl implements BillingService {
                 .subtotal(cartSummary.getSubtotal())
                 .gstTotal(cartSummary.getGstTotal())
                 .discountTotal(cartSummary.getDiscountTotal())
-                .grandTotal(calculatedGrandTotal) // 🔥 Fixed calculation added here
+                .grandTotal(calculatedGrandTotal)
                 .paymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod() : "CASH")
                 .items(new ArrayList<>())
                 .status("COMPLETED")
                 .build();
 
-        // 🔥 FRONTEND ISSUE 1 FIX: Customer Details added gracefully
-        invoice.setCustomerName(request.getCustomerName() != null ? request.getCustomerName() : "Walk-in Customer");
+        // 🔥 BUG FIX: Customer Details safely mapped (including new Email field)
+        String cName = request.getCustomerName();
+        invoice.setCustomerName((cName != null && !cName.trim().isEmpty()) ? cName : "Walk-in Customer");
         invoice.setCustomerPhone(request.getCustomerPhone());
+
+        // Check and map email safely
+        if (request.getCustomerEmail() != null && !request.getCustomerEmail().trim().isEmpty()) {
+            invoice.setCustomerEmail(request.getCustomerEmail());
+        }
 
         /* 🔥 If you want to update Customer Ledger (Issue 4), uncomment this block:
         if (request.getCustomerId() != null) {
@@ -114,7 +120,7 @@ public class BillingServiceImpl implements BillingService {
         return BillResponse.builder()
                 .invoiceNumber(invoiceNumber)
                 .cashierId(cashierId)
-                .customerName(invoice.getCustomerName()) // 🔥 Added for response
+                .customerName(invoice.getCustomerName())
                 .grandTotal(invoice.getGrandTotal())
                 .paymentMethod(invoice.getPaymentMethod())
                 .message("Bill generated securely with Lock and stock deducted!")
@@ -132,7 +138,6 @@ public class BillingServiceImpl implements BillingService {
                 .orElseThrow(() -> new RuntimeException("Invoice not found: " + invoiceNumber));
     }
 
-    // 🔥 FRONTEND ISSUE 5 FIX: Cashier History Access Logic
     @Override
     public List<Invoice> getAllBillsForUser(String userEmail, String role) {
         if (role.contains("ROLE_ADMIN") || role.contains("ADMIN")) {
@@ -176,7 +181,6 @@ public class BillingServiceImpl implements BillingService {
 
         // 4. Update Invoice Status
         invoice.setStatus("CANCELLED");
-        // Note: If you added a 'cancelledBy' field in Invoice.java later, you can set it here.
 
         invoiceRepository.save(invoice);
 
