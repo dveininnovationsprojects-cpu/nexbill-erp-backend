@@ -70,4 +70,9 @@ public class User implements UserDetails {
     }
     private String resetOtp;
     private java.time.LocalDateTime otpExpiry;
+    @Builder.Default
+    private Integer totalBillsGeneratedCount = 0;
+
+    @Builder.Default
+    private Double todaysCashCollected = 0.0;
 }

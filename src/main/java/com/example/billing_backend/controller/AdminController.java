@@ -46,4 +46,24 @@ public class AdminController {
     public ResponseEntity<List<User>> getActiveCashiers() {
         return ResponseEntity.ok(userRepository.findByRoleAndStatus(Role.CASHIER, UserStatus.ACTIVE));
     }
+    @GetMapping("/all-cashiers")
+    public ResponseEntity<List<User>> getAllCashiers() {
+        return ResponseEntity.ok(userRepository.findByRole(Role.CASHIER));
+    }
+
+    @PutMapping("/cashier/{id}/toggle-status")
+    public ResponseEntity<String> toggleCashierStatus(
+            @PathVariable Integer id,
+            @RequestParam UserStatus status) {
+
+        User cashier = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Cashier profile entry not found!"));
+
+        if (cashier.getRole() == Role.ADMIN) {
+            throw new RuntimeException("Security Breach: Admin status cannot be altered via this endpoint!");
+        }
+        cashier.setStatus(status);
+        userRepository.save(cashier);
+        return ResponseEntity.ok("Cashier status updated successfully to: " + status);
+    }
 }

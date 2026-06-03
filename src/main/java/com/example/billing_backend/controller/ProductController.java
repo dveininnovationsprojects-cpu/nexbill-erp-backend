@@ -56,7 +56,7 @@ public class ProductController {
         return ResponseEntity.ok("Product safely moved to trash (Soft Deleted)!");
     }
 
-    // PUDHU FEATURE: Crash-Free Bulk Upload Endpoint
+
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @PostMapping("/upload-bill")
     public ResponseEntity<String> uploadSupplierBill(

@@ -51,4 +51,10 @@ public class Customer {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+    // Model class kulla enum and dynamic tracker fields
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private CustomerStatus status = CustomerStatus.ACTIVE;
+
+    private java.time.LocalDateTime lastCreditDateTime;
 }

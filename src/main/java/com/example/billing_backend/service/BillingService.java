@@ -13,11 +13,13 @@ public interface BillingService {
     // 2. View Specific Bill (For Reprint / PDF)
     Invoice getBillByInvoiceNumber(String invoiceNumber);
 
-    // 3. View All Bills (For Admin History)
-    List<Invoice> getAllBills();
+    // =========================================================
+    // 🔥 FRONTEND ISSUE 5 FIX: History Access (Replaces getAllBills)
+    // =========================================================
+    List<Invoice> getAllBillsForUser(String userEmail, String role);
 
     // =========================================================
-    // 🔥 NEW ADDITION: CANCEL INVOICE (Soft Delete & Restock)
+    // 🔥 CANCEL INVOICE (Soft Delete & Restock)
     // =========================================================
     String cancelInvoice(String invoiceNumber, String cancelledBy);
 }

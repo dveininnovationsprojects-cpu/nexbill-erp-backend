@@ -15,7 +15,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
 import java.time.Instant;
 
 @Service
@@ -26,6 +25,7 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final NotificationService notificationService;
     private final EmailService emailService;
 
     public AuthResponse register(RegisterRequest request) {
@@ -35,9 +35,8 @@ public class AuthenticationService {
                     .token(null)
                     .build();
         }
-
+        validatePasswordStrength(request.getPassword());
         UserStatus initialStatus = UserStatus.PENDING;
-
         if (request.getRole() == Role.ADMIN) {
             if (request.getAdminSecretKey() == null || !request.getAdminSecretKey().equals("DVEIN_SUPER_SECRET_KEY_123")) {
                 return AuthResponse.builder()
@@ -47,7 +46,6 @@ public class AuthenticationService {
             }
             initialStatus = UserStatus.ACTIVE;
         }
-
         var user = User.builder()
                 .name(request.getName())
                 .email(request.getEmail())
@@ -55,35 +53,38 @@ public class AuthenticationService {
                 .role(request.getRole())
                 .status(initialStatus)
                 .build();
-
         repository.save(user);
 
+        if (user.getRole() == Role.CASHIER) {
+            notificationService.triggerNewRegistrationAlertToAdmins(user);
+        }
         if (request.getRole() == Role.CASHIER) {
             return AuthResponse.builder()
                     .message("Registration successful. Waiting for Admin approval.")
                     .token(null)
                     .build();
         }
-
         var jwtToken = jwtService.generateToken(user);
         return AuthResponse.builder()
                 .message("Admin Registration successful")
                 .token(jwtToken)
                 .build();
     }
-
     public AuthResponse authenticate(AuthRequest request) {
         try {
             var user = repository.findByEmail(request.getEmail())
                     .orElseThrow(() -> new org.springframework.security.authentication.BadCredentialsException("Invalid email or password"));
-
-            if (user.getStatus() != UserStatus.ACTIVE) {
+            if (user.getStatus() == UserStatus.PENDING) {
                 return AuthResponse.builder()
                         .message("Account is not active. Please wait for Admin approval.")
                         .token(null)
                         .build();
+            } else if (user.getStatus() == UserStatus.SUSPENDED) {
+                return AuthResponse.builder()
+                        .message("You are suspended! Please contact the administrator to restore access.")
+                        .token(null)
+                        .build();
             }
-
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
             );
@@ -149,7 +150,6 @@ public class AuthenticationService {
                 .token(null)
                 .build();
     }
-
     public AuthResponse resetPassword(com.example.billing_backend.dto.PasswordResetDto request) {
         var user = repository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User account not found!"));
@@ -164,6 +164,7 @@ public class AuthenticationService {
             repository.save(user);
             throw new RuntimeException("Verification code expired!");
         }
+        validatePasswordStrength(request.getNewPassword());
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         user.setResetOtp(null);
@@ -174,5 +175,23 @@ public class AuthenticationService {
                 .message("Password updated successfully")
                 .token(null)
                 .build();
+    }
+    public void deleteUser(Integer id) {
+        User user = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("account not found!"));
+
+        if (refreshTokenRepository != null) {
+            refreshTokenRepository.deleteByUser(user);
+        }
+        repository.delete(user);
+    }
+    private void validatePasswordStrength(String password) {
+        if (password == null) {
+            throw new RuntimeException("Password cannot be empty!");
+        }
+        String regex = "^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\",./<>?]).{8,}$";
+        if (!password.matches(regex)) {
+            throw new RuntimeException("Password is too weak! It must be at least 8 characters long, contain at least one uppercase letter, one number, and one special character.");
+        }
     }
 }

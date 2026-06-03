@@ -1,5 +1,6 @@
 package com.example.billing_backend.repository;
 
+import com.example.billing_backend.dto.CategoryValuationDto;
 import com.example.billing_backend.model.Inventory;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
@@ -10,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -43,4 +45,11 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
     // 6. Count Low Stock for Dashboard
     @Query("SELECT COUNT(i) FROM Inventory i WHERE i.availableQuantity <= i.reorderLevel")
     long countLowStockAlerts();
+    // Out of Stock Counter
+    @Query("SELECT COUNT(i) FROM Inventory i WHERE i.availableQuantity <= 0")
+    Long countOutOfStockItems();
+
+    // Category-wise Valuation Matrix
+    @Query("SELECT new com.example.billing_backend.dto.CategoryValuationDto(c.name, SUM(i.availableQuantity * p.purchasePrice)) FROM Inventory i JOIN i.product p JOIN p.category c GROUP BY c.name")
+    List<CategoryValuationDto> getCategoryValuations();
 }

@@ -20,6 +20,8 @@ public class InventoryServiceImpl implements InventoryService {
 
     private final InventoryRepository inventoryRepository;
     private final ProductRepository productRepository;
+    // Add this line at the top parameter definitions inside your service classes
+    private final NotificationService notificationService;
 
     private InventoryResponse mapToResponse(Inventory inv) {
         return InventoryResponse.builder()
@@ -36,8 +38,18 @@ public class InventoryServiceImpl implements InventoryService {
     private void updateAlertState(Inventory inv) {
         boolean isLow = inv.getAvailableQuantity().compareTo(inv.getReorderLevel()) <= 0;
         inv.setLowStockAlert(isLow);
-    }
 
+        // ==========================================
+        // 🚀 TRIGGER NOTIFICATION: WAREHOUSE DROPPED TO MIN STOCK LEVEL
+        // ==========================================
+        if (isLow && !inv.getProduct().isDeleted()) {
+            notificationService.triggerLowStockAdminAlert(
+                    inv.getProduct().getName(),
+                    inv.getAvailableQuantity().intValue()
+            );
+        }
+        // ==========================================
+    }
     @Override
     @Transactional
     public void addStock(Long productId, BigDecimal quantity) {
@@ -70,20 +82,31 @@ public class InventoryServiceImpl implements InventoryService {
         if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0)
             throw new RuntimeException("Quantity must be greater than zero");
 
+        // 🔥 AUTOMATION SHIELD: Record illana, automatic-ah crash aagama realtime placeholder line insert aagum!
         Inventory inv = inventoryRepository.findByProduct_Id(productId)
-                .orElseThrow(() -> new RuntimeException("Inventory not found"));
+                .orElseGet(() -> {
+                    Product product = productRepository.findById(productId)
+                            .orElseThrow(() -> new RuntimeException("Product not found with ID: " + productId));
+                    return Inventory.builder()
+                            .product(product)
+                            .availableQuantity(BigDecimal.ZERO) // Starts with empty pool
+                            .reorderLevel(BigDecimal.valueOf(10.0))
+                            .lowStockAlert(true)
+                            .build();
+                });
 
         if (inv.getProduct().isDeleted())
             throw new RuntimeException("Cannot reduce stock for a deleted product!");
 
-        if (inv.getAvailableQuantity().compareTo(quantity) < 0)
-            throw new RuntimeException("Insufficient Stock!");
+        // Check if store has enough physical packets to fulfill checkout request
+        if (inv.getAvailableQuantity().compareTo(quantity) < 0) {
+            throw new RuntimeException("Insufficient Stock! Available: " + inv.getAvailableQuantity() + ", Requested: " + quantity);
+        }
 
         inv.setAvailableQuantity(inv.getAvailableQuantity().subtract(quantity));
-        updateAlertState(inv);
+        updateAlertState(inv); // Automatic low-stock checking logic triggered cleanly
         inventoryRepository.save(inv);
     }
-
     @Override
     public InventoryResponse getInventoryByProductId(Long productId) {
         Inventory inv = inventoryRepository.findByProduct_Id(productId)

@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +26,7 @@ public class BillingServiceImpl implements BillingService {
     private final CartService cartService;
     private final InventoryRepository inventoryRepository;
     private final InvoiceRepository invoiceRepository;
+    // private final CustomerRepository customerRepository; // 🔥 Uncomment if you are using Customer DB Table
 
     @Override
     @Transactional
@@ -37,6 +39,11 @@ public class BillingServiceImpl implements BillingService {
 
         String invoiceNumber = "INV-" + LocalDateTime.now().getYear() + "-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
 
+        // 🔥 Ensure Grand Total is mathematically correct
+        BigDecimal calculatedGrandTotal = cartSummary.getSubtotal()
+                .add(cartSummary.getGstTotal())
+                .subtract(cartSummary.getDiscountTotal());
+
         Invoice invoice = Invoice.builder()
                 .invoiceNumber(invoiceNumber)
                 .cashierId(cashierId)
@@ -45,10 +52,34 @@ public class BillingServiceImpl implements BillingService {
                 .subtotal(cartSummary.getSubtotal())
                 .gstTotal(cartSummary.getGstTotal())
                 .discountTotal(cartSummary.getDiscountTotal())
-                .grandTotal(cartSummary.getGrandTotal())
+                .grandTotal(calculatedGrandTotal)
                 .paymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod() : "CASH")
                 .items(new ArrayList<>())
+                .status("COMPLETED")
                 .build();
+
+        // 🔥 BUG FIX: Customer Details safely mapped (including new Email field)
+        String cName = request.getCustomerName();
+        invoice.setCustomerName((cName != null && !cName.trim().isEmpty()) ? cName : "Walk-in Customer");
+        invoice.setCustomerPhone(request.getCustomerPhone());
+
+        // Check and map email safely
+        if (request.getCustomerEmail() != null && !request.getCustomerEmail().trim().isEmpty()) {
+            invoice.setCustomerEmail(request.getCustomerEmail());
+        }
+
+        /* 🔥 If you want to update Customer Ledger (Issue 4), uncomment this block:
+        if (request.getCustomerId() != null) {
+            Customer customer = customerRepository.findById(request.getCustomerId()).orElse(null);
+            if (customer != null) {
+                invoice.setCustomerName(customer.getName());
+                invoice.setCustomerPhone(customer.getMobile());
+                if(customer.getTotalSpent() == null) customer.setTotalSpent(BigDecimal.ZERO);
+                customer.setTotalSpent(customer.getTotalSpent().add(calculatedGrandTotal));
+                customerRepository.save(customer);
+            }
+        }
+        */
 
         invoice = invoiceRepository.save(invoice);
 
@@ -89,6 +120,7 @@ public class BillingServiceImpl implements BillingService {
         return BillResponse.builder()
                 .invoiceNumber(invoiceNumber)
                 .cashierId(cashierId)
+                .customerName(invoice.getCustomerName())
                 .grandTotal(invoice.getGrandTotal())
                 .paymentMethod(invoice.getPaymentMethod())
                 .message("Bill generated securely with Lock and stock deducted!")
@@ -107,12 +139,16 @@ public class BillingServiceImpl implements BillingService {
     }
 
     @Override
-    public List<Invoice> getAllBills() {
-        return invoiceRepository.findAll();
+    public List<Invoice> getAllBillsForUser(String userEmail, String role) {
+        if (role.contains("ROLE_ADMIN") || role.contains("ADMIN")) {
+            return invoiceRepository.findAllByOrderByCreatedAtDesc();
+        }
+        // Cashier sees only their invoices
+        return invoiceRepository.findByCashierIdOrderByCreatedAtDesc(userEmail);
     }
 
     // =========================================================
-    // 🔥 NEW ADDITION: CANCEL INVOICE & RESTOCK LOGIC
+    // 🔥 CANCEL INVOICE & RESTOCK LOGIC
     // =========================================================
 
     @Override
@@ -145,7 +181,6 @@ public class BillingServiceImpl implements BillingService {
 
         // 4. Update Invoice Status
         invoice.setStatus("CANCELLED");
-        // Note: If you added a 'cancelledBy' field in Invoice.java later, you can set it here.
 
         invoiceRepository.save(invoice);
 

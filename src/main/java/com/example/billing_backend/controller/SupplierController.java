@@ -60,4 +60,10 @@ public class SupplierController {
             @RequestParam(required = false, defaultValue = "0") Double paid) {
         return ResponseEntity.ok(supplierService.updateSupplierLedger(id, purchase, paid));
     }
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> deleteSupplier(@PathVariable Integer id) {
+        supplierService.deleteSupplier(id);
+        return ResponseEntity.ok("Supplier deleted successfully");
+    }
 }

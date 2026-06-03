@@ -56,15 +56,6 @@ public class CategoryServiceImpl implements CategoryService {
         if (!categoryRepository.existsById(id)) {
             throw new RuntimeException("Category not found with id: " + id);
         }
-
-        // FUTURE RULE: Category cannot be deleted if products exist.
-        // Namma ProductRepository create pannadhum indha code-ah uncomment pannuvom:
-        /*
-        if (productRepository.existsByCategoryId(id)) {
-            throw new RuntimeException("Deletion Rejected: Cannot delete category because products are linked to it!");
-        }
-        */
-
         categoryRepository.deleteById(id);
     }
 }

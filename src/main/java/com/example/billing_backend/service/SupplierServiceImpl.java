@@ -127,4 +127,11 @@ public class SupplierServiceImpl implements SupplierService {
         Supplier savedSupplier = supplierRepository.save(supplier);
         return mapToResponseDto(savedSupplier);
     }
+    @Override
+    public void deleteSupplier(Integer id) {
+        if (!supplierRepository.existsById(id)) {
+            throw new RuntimeException("Supplier not found!");
+        }
+        supplierRepository.deleteById(id);
+    }
 }
