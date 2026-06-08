@@ -1,3 +1,4 @@
+
 package com.example.billing_backend.controller;
 
 import com.example.billing_backend.dto.BillRequest;
@@ -7,6 +8,7 @@ import com.example.billing_backend.service.BillingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -23,41 +25,37 @@ public class BillingController {
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
     @PostMapping("/checkout")
     public ResponseEntity<BillResponse> checkout(Principal principal, @RequestBody BillRequest request) {
-        String cashierId = principal.getName();
-        return ResponseEntity.ok(billingService.checkout(cashierId, request));
+        return ResponseEntity.ok(billingService.checkout(principal.getName(), request));
     }
 
-    // 🔥 Get Specific Bill
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
+    @PostMapping("/create")
+    public ResponseEntity<BillResponse> createDirectInvoice(Principal principal, @RequestBody BillRequest request) {
+        return ResponseEntity.ok(billingService.createDirectInvoice(principal.getName(), request));
+    }
+
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
     @GetMapping("/{invoiceNumber}")
     public ResponseEntity<Invoice> getBill(@PathVariable String invoiceNumber) {
         return ResponseEntity.ok(billingService.getBillByInvoiceNumber(invoiceNumber));
     }
 
-    // 🔥 Get All Bills (Admin Only)
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    @GetMapping("/history")
-    public ResponseEntity<List<Invoice>> getAllBills() {
-        return ResponseEntity.ok(billingService.getAllBills());
-    }
-
-    // 🔥 Get Cashier Own Bills
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
-    @GetMapping("/my-invoices")
-    public ResponseEntity<List<Invoice>> getMyInvoices(Principal principal) {
-        return ResponseEntity.ok(billingService.getInvoicesByCashier(principal.getName()));
+    @GetMapping("/history")
+    public ResponseEntity<List<Invoice>> getAllBills(Principal principal) {
+        String role = SecurityContextHolder.getContext().getAuthentication().getAuthorities().toString();
+        return ResponseEntity.ok(billingService.getAllBillsForUser(principal.getName(), role));
     }
 
-    // =========================================================
-    // 🔥 CANCEL / SOFT DELETE INVOICE & RESTOCK (Admin Only)
-    // =========================================================
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @PutMapping("/cancel/{invoiceNumber}")
-    public ResponseEntity<String> cancelInvoice(
-            @PathVariable String invoiceNumber,
-            Principal principal) {
+    public ResponseEntity<String> cancelInvoice(@PathVariable String invoiceNumber, Principal principal) {
+        return ResponseEntity.ok(billingService.cancelInvoice(invoiceNumber, principal.getName()));
+    }
 
-        String responseMessage = billingService.cancelInvoice(invoiceNumber, principal.getName());
-        return ResponseEntity.ok(responseMessage);
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
+    @PutMapping("/pay/{invoiceNumber}")
+    public ResponseEntity<String> markAsPaid(@PathVariable String invoiceNumber, Principal principal) {
+        return ResponseEntity.ok(billingService.markAsPaid(invoiceNumber, principal.getName()));
     }
 }
