@@ -6,17 +6,15 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "system_settings")
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SystemSettings {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    // Inside com.example.billing_backend.model.SystemSettings.java
-
-    // 🔥 Fix: Increased column size for Base64 Logo strings
-
 
     // 🔥 BUSINESS PROFILE
     private String companyName;
@@ -31,6 +29,8 @@ public class SystemSettings {
     private String gstNumber;
     private String panNumber;
     private String cin;
+
+    // 🔥 Fix: Increased column size for Base64 Logo strings
     @Column(columnDefinition = "TEXT")
     private String logoUrl;
 
@@ -40,8 +40,10 @@ public class SystemSettings {
     private Integer paymentDueDays;
     private String currency;
     private String dateFormat;
+
     @Column(columnDefinition = "TEXT")
     private String defaultPaymentTerms;
+
     @Column(columnDefinition = "TEXT")
     private String invoiceFooterNote;
 
@@ -55,10 +57,4 @@ public class SystemSettings {
 
     private int defaultReorderLevel;
     private LocalDateTime updatedAt;
-
-    // Inside com.example.billing_backend.model.SystemSettings.java
-
-    // 🔥 Fix: Increased column size for Base64 Logo strings
-    @Column(columnDefinition = "TEXT")
-    private String logoUrl;
 }
