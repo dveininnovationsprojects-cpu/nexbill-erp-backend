@@ -1,4 +1,5 @@
-package com.example.billing_backend.model;
+
+        package com.example.billing_backend.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -19,7 +20,7 @@ public class InvoiceItem {
     @JsonIgnore
     private Invoice invoice;
 
-    @Column(nullable = false)
+    // Nullable for direct/custom invoices
     private Long productId;
 
     @Column(nullable = false)

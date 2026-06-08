@@ -77,6 +77,7 @@ public class SecurityConfig {
                         // 4. ADMIN & BILLING ROUTES
                         .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
                         .requestMatchers("/api/billing/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "CASHIER", "ROLE_CASHIER")
+                        .requestMatchers("/api/cart/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "CASHIER", "ROLE_CASHIER")
 
                         // 5. Secure all other requests
                         .anyRequest().authenticated()
