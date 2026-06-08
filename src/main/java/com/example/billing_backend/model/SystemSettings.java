@@ -31,6 +31,7 @@ public class SystemSettings {
     private String gstNumber;
     private String panNumber;
     private String cin;
+    @Column(columnDefinition = "TEXT")
     private String logoUrl;
 
     // 🔥 INVOICE SETTINGS
