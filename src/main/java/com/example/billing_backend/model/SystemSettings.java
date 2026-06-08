@@ -13,6 +13,11 @@ public class SystemSettings {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Inside com.example.billing_backend.model.SystemSettings.java
+
+    // 🔥 Fix: Increased column size for Base64 Logo strings
+
+
     // 🔥 BUSINESS PROFILE
     private String companyName;
     private String tagline;
@@ -49,4 +54,10 @@ public class SystemSettings {
 
     private int defaultReorderLevel;
     private LocalDateTime updatedAt;
+
+    // Inside com.example.billing_backend.model.SystemSettings.java
+
+    // 🔥 Fix: Increased column size for Base64 Logo strings
+    @Column(columnDefinition = "TEXT")
+    private String logoUrl;
 }

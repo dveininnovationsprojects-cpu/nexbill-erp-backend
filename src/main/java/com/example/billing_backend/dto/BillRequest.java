@@ -1,17 +1,20 @@
 package com.example.billing_backend.dto;
 
 import lombok.Data;
+import java.util.List;
 
 @Data
 public class BillRequest {
     private String paymentMethod;
-
-    // Frontend anuppura Customer details
     private String customerName;
     private String customerPhone;
-
-    // 🔥 IDHU THAAN MISSING! Indha line add aanadhum error parandhidum.
     private String customerEmail;
 
-    private Long customerId; // Future use-kaga
+    // 🔥 New Fields Added Below
+    private String customerAddress;
+    private String customerGstNo;
+    private String dueDate;
+    private Double discount;
+    private String notes;
+    private List<BillItemRequest> items;
 }
