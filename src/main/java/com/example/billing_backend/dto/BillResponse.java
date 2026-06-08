@@ -10,6 +10,10 @@ import java.time.LocalDateTime;
 public class BillResponse {
     private String invoiceNumber;
     private String cashierId;
+
+    // 🔥 FIX: Response-la customer name add panniyachi!
+    private String customerName;
+
     private BigDecimal grandTotal;
     private String paymentMethod;
     private String message;

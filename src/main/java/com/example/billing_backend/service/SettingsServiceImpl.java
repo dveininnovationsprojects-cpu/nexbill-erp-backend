@@ -19,16 +19,19 @@ public class SettingsServiceImpl implements SettingsService {
     private final SettingsRepository settingsRepository;
     private final SettingsAuditLogRepository auditLogRepository;
 
+    // =========================================================
+    // 🔥 Step 1: System Initialization (Generic Empty Defaults)
+    // Namma company name hardcode panna koodadhu. Admin dhaan UI-la update pannanum!
+    // =========================================================
     @PostConstruct
     public void initDefaultSettings() {
-        if (!settingsRepository.existsById(1L)) {
+        if (settingsRepository.count() == 0) {
             SystemSettings defaultSettings = SystemSettings.builder()
-                    .id(1L)
-                    .companyName("DVein Innovation Pvt Ltd")
-                    .companyAddress("Karapakkam, Chennai")
-                    .companyPhone("+91 98765 43210")
-                    .companyEmail("admin@dvein.com")
-                    .gstNumber("33ABCDE1234F1Z5")
+                    .companyName("Please update Company Name") // Generic placeholder
+                    .companyAddress("Please update Address")
+                    .companyPhone("")
+                    .companyEmail("")
+                    .gstNumber("")
                     .invoicePrefix("INV")
                     .currency("INR")
                     .defaultReorderLevel(10)
@@ -38,48 +41,80 @@ public class SettingsServiceImpl implements SettingsService {
         }
     }
 
+    // =========================================================
+    // 🔥 Step 2: Fetch Settings (Dynamic ID fetch)
+    // =========================================================
     @Override
     public SystemSettings getSettings() {
-        return settingsRepository.findById(1L)
+        return settingsRepository.findAll().stream().findFirst()
                 .orElseThrow(() -> new RuntimeException("System settings not found!"));
     }
 
+    // =========================================================
+    // 🔥 Step 3: Admin Update Logic (From Frontend App)
+    // =========================================================
     @Override
     @Transactional
     public SystemSettings updateSettings(SettingsRequest request, String updatedBy) {
         SystemSettings current = getSettings();
+
         String gstRegex = "^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$";
-        if (request.getGstNumber() != null && !request.getGstNumber().matches(gstRegex)) {
-            throw new RuntimeException("Invalid GST Number format!");
+        if (request.getGstNumber() != null && !request.getGstNumber().trim().isEmpty()) {
+            if (!request.getGstNumber().matches(gstRegex)) {
+                throw new RuntimeException("Invalid GST Number format!");
+            }
+            current.setGstNumber(request.getGstNumber().toUpperCase());
+        } else {
+            current.setGstNumber("");
         }
 
+        // 🛡️ Rule 2: Invoice Prefix Check
         if (request.getInvoicePrefix() == null || request.getInvoicePrefix().trim().isEmpty()) {
             throw new RuntimeException("Invoice Prefix cannot be empty!");
         }
 
+        // 🛡️ Rule 3: Low Stock Validations
         if (request.getDefaultReorderLevel() < 0) {
             throw new RuntimeException("Default Reorder Level cannot be negative!");
         }
-        StringBuilder changes = new StringBuilder("Updated: ");
-        if (!current.getCompanyName().equals(request.getCompanyName())) changes.append("Company Name, ");
-        if (!current.getGstNumber().equals(request.getGstNumber())) changes.append("GST Number, ");
-        if (current.getDefaultReorderLevel() != request.getDefaultReorderLevel()) changes.append("Reorder Level, ");
-        current.setCompanyName(request.getCompanyName());
-        current.setCompanyAddress(request.getCompanyAddress());
-        current.setCompanyPhone(request.getCompanyPhone());
+
+        current.setCompanyName(request.getCompanyName() != null && !request.getCompanyName().isEmpty() ? request.getCompanyName() : "Company Name Not Set");
+        current.setTagline(request.getTagline());
         current.setCompanyEmail(request.getCompanyEmail());
-        current.setGstNumber(request.getGstNumber().toUpperCase());
-        current.setInvoicePrefix(request.getInvoicePrefix().toUpperCase());
-        current.setCurrency(request.getCurrency());
-        current.setDefaultReorderLevel(request.getDefaultReorderLevel());
+        current.setCompanyPhone(request.getCompanyPhone());
+        current.setWebsite(request.getWebsite());
+        current.setCompanyAddress(request.getCompanyAddress());
+        current.setCity(request.getCity());
+        current.setState(request.getState());
+        current.setPinCode(request.getPinCode());
+        current.setPanNumber(request.getPanNumber());
+        current.setCin(request.getCin());
         current.setLogoUrl(request.getLogoUrl());
+
+        current.setInvoicePrefix(request.getInvoicePrefix().toUpperCase());
+        current.setStartingNumber(request.getStartingNumber() != null ? request.getStartingNumber() : 1001L);
+        current.setPaymentDueDays(request.getPaymentDueDays() != null ? request.getPaymentDueDays() : 7);
+        current.setCurrency(request.getCurrency() != null ? request.getCurrency() : "INR");
+        current.setDateFormat(request.getDateFormat());
+        current.setDefaultPaymentTerms(request.getDefaultPaymentTerms());
+        current.setInvoiceFooterNote(request.getInvoiceFooterNote());
+
+        current.setShowCompanyLogo(request.getShowCompanyLogo() != null ? request.getShowCompanyLogo() : true);
+        current.setShowGstBreakdown(request.getShowGstBreakdown() != null ? request.getShowGstBreakdown() : true);
+        current.setShowSignatureArea(request.getShowSignatureArea() != null ? request.getShowSignatureArea() : true);
+        current.setShowPaymentQrCode(request.getShowPaymentQrCode() != null ? request.getShowPaymentQrCode() : false);
+        current.setShowBankTransferDetails(request.getShowBankTransferDetails() != null ? request.getShowBankTransferDetails() : true);
+        current.setShowTermsAndConditions(request.getShowTermsAndConditions() != null ? request.getShowTermsAndConditions() : true);
+
+        current.setDefaultReorderLevel(request.getDefaultReorderLevel());
         current.setUpdatedAt(LocalDateTime.now());
 
         SystemSettings updatedSettings = settingsRepository.save(current);
 
+        // 📜 Save Audit Log
         SettingsAuditLog log = SettingsAuditLog.builder()
                 .updatedBy(updatedBy)
-                .changesSummary(changes.toString().endsWith(", ") ? changes.substring(0, changes.length() - 2) : "Minor fixes")
+                .changesSummary("Admin updated system settings via App")
                 .build();
         auditLogRepository.save(log);
 
@@ -90,11 +125,11 @@ public class SettingsServiceImpl implements SettingsService {
     @Transactional
     public SystemSettings resetToDefault(String updatedBy) {
         settingsRepository.deleteAll();
-        initDefaultSettings(); // Recreate defaults
+        initDefaultSettings(); // Recreate empty generic defaults
 
         SettingsAuditLog log = SettingsAuditLog.builder()
                 .updatedBy(updatedBy)
-                .changesSummary("SYSTEM RESET TO DEFAULTS")
+                .changesSummary("SYSTEM RESET TO GENERIC DEFAULTS")
                 .build();
         auditLogRepository.save(log);
 

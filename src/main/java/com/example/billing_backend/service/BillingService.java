@@ -16,6 +16,9 @@ public interface BillingService {
     // 3. View All Bills (For Admin History)
     List<Invoice> getAllBills();
 
+    // 4. View Cashier Own Bills
+    List<Invoice> getInvoicesByCashier(String cashierId);
+
     // =========================================================
     // 🔥 NEW ADDITION: CANCEL INVOICE (Soft Delete & Restock)
     // =========================================================

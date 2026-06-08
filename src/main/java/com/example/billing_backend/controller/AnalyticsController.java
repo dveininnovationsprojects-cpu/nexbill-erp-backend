@@ -17,7 +17,7 @@ public class AnalyticsController {
 
     private final AnalyticsServiceImpl analyticsService;
 
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_CASHIER')")
     @GetMapping("/mega-dashboard")
     public ResponseEntity<AdvancedDashboardDto> fetchMegaDashboard(
             @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,

@@ -41,6 +41,13 @@ public class BillingController {
         return ResponseEntity.ok(billingService.getAllBills());
     }
 
+    // 🔥 Get Cashier Own Bills
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
+    @GetMapping("/my-invoices")
+    public ResponseEntity<List<Invoice>> getMyInvoices(Principal principal) {
+        return ResponseEntity.ok(billingService.getInvoicesByCashier(principal.getName()));
+    }
+
     // =========================================================
     // 🔥 CANCEL / SOFT DELETE INVOICE & RESTOCK (Admin Only)
     // =========================================================

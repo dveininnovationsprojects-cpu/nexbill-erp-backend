@@ -18,7 +18,6 @@ public class CartController {
 
     private final CartService cartService;
 
-    // 🔥 Helper Method: Get the logged-in Cashier's ID (Email) from JWT Token
     private String getCashierId(Principal principal) {
         return principal.getName();
     }

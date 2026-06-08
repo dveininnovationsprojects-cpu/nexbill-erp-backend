@@ -52,7 +52,20 @@ public class ProfileServiceImpl implements ProfileService {
         }
 
         if (request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
+
+
+            if (request.getOldPassword() == null || request.getOldPassword().trim().isEmpty()) {
+                throw new IllegalArgumentException("Current password is required to set a new password!");
+            }
+
+
+            if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+                throw new IllegalArgumentException("The current password you entered is incorrect!");
+            }
+
+
             validatePasswordStrength(request.getPassword());
+
 
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
@@ -86,7 +99,6 @@ public class ProfileServiceImpl implements ProfileService {
             detailsChanged = true;
         }
 
-        // Check if status is transitioning to ACTIVE status constraints limits
         boolean statusChangedToActive = request.getStatus() != null
                 && request.getStatus() == com.example.billing_backend.model.UserStatus.ACTIVE
                 && staff.getStatus() != com.example.billing_backend.model.UserStatus.ACTIVE;
@@ -104,23 +116,17 @@ public class ProfileServiceImpl implements ProfileService {
                     .targetedUser(updatedStaff) // Targeting ONLY this specific cashier
                     .createdAt(java.time.LocalDateTime.now())
                     .build();
-            // Assuming you have notificationRepository injected here, or call a method in NotificationService
-            // notificationRepository.save(alert);
+
             notificationService.sendDirectNotification(updatedStaff, "Profile Updated", "Admin updated your details.");
         }
 
-        // ==========================================
-        // 🚀 TRIGGER NOTIFICATION: ADMIN PROFILE APPROVAL SPRINT
-        // ==========================================
         if (statusChangedToActive) {
             notificationService.triggerApprovalAlertToCashier(updatedStaff);
         }
-        // ==========================================
 
         return mapToProfileResponse(updatedStaff);
     }
 
-    // Helper mapping function target layout bypass logic setup
     private ProfileResponseDto mapToProfileResponse(User user) {
         return ProfileResponseDto.builder()
                 .id(user.getId())

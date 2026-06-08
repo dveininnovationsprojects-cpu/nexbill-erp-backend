@@ -9,41 +9,52 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
-
 import java.util.List;
 import java.util.Optional;
 
-@Repository
 public interface InventoryRepository extends JpaRepository<Inventory, Long> {
 
-    // 1. Normal Inventory Fetch
     Optional<Inventory> findByProduct_Id(Long productId);
+
+    @Query("SELECT i FROM Inventory i WHERE LOWER(i.product.name) LIKE LOWER(CONCAT('%', :name, '%')) AND i.product.isDeleted = false")
+    List<Inventory> findByProductNameContaining(@Param("name") String name);
 
     // 2. 🔥 Anti-Race Condition Lock for Billing Module
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT i FROM Inventory i WHERE i.product.id = :productId")
     Optional<Inventory> findByProduct_IdForUpdate(@Param("productId") Long productId);
 
-    // =======================================================
-    // 🔥 STOCK ALERT QUERIES (These were missing earlier!)
-    // Returns Page<Inventory> so that .map() works perfectly in StockAlertService
-    // =======================================================
+    // ==========================================
+    // 🔥 ENTERPRISE STOCK ALERT QUERIES (Fixed)
+    // ==========================================
 
-    // 3. Low Stock: Qty <= Reorder Level
-    @Query("SELECT i FROM Inventory i WHERE i.availableQuantity <= i.reorderLevel")
+    @Query("""
+        SELECT i FROM Inventory i 
+        WHERE i.availableQuantity <= i.reorderLevel 
+        AND i.availableQuantity > 0 
+        AND i.product.isDeleted = false 
+        ORDER BY i.availableQuantity ASC
+    """)
     Page<Inventory> findLowStockProducts(Pageable pageable);
 
-    // 4. Out of Stock: Qty = 0
-    @Query("SELECT i FROM Inventory i WHERE i.availableQuantity = 0")
+    @Query("""
+        SELECT i FROM Inventory i 
+        WHERE i.availableQuantity = 0 
+        AND i.product.isDeleted = false 
+        ORDER BY i.updatedAt DESC
+    """)
     Page<Inventory> findOutOfStockProducts(Pageable pageable);
 
-    // 5. Critical Stock: Qty between 1 and 2
-    @Query("SELECT i FROM Inventory i WHERE i.availableQuantity > 0 AND i.availableQuantity <= 2")
+    @Query("""
+        SELECT i FROM Inventory i 
+        WHERE i.availableQuantity <= 2 
+        AND i.availableQuantity > 0 
+        AND i.product.isDeleted = false 
+        ORDER BY i.availableQuantity ASC
+    """)
     Page<Inventory> findCriticalStockProducts(Pageable pageable);
 
-    // 6. Count Low Stock for Dashboard
-    @Query("SELECT COUNT(i) FROM Inventory i WHERE i.availableQuantity <= i.reorderLevel")
+    @Query("SELECT COUNT(i) FROM Inventory i WHERE i.availableQuantity <= i.reorderLevel AND i.product.isDeleted = false")
     long countLowStockAlerts();
     // Out of Stock Counter
     @Query("SELECT COUNT(i) FROM Inventory i WHERE i.availableQuantity <= 0")

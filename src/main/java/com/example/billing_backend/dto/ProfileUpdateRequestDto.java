@@ -13,5 +13,6 @@ public class ProfileUpdateRequestDto {
     private String name;
     private String email;
     private String phone;
-    private String password; // Optional - Puthu password matha nenaicha mattum pass pannuvanga
+    private String password;
+    private String oldPassword;
 }

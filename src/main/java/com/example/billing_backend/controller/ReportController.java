@@ -21,7 +21,7 @@ public class ReportController {
     private final ReportService reportService;
 
     // 1. JSON Endpoint for the Visual Dashboard (For Selvamani)
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
     @GetMapping("/dashboard")
     public ResponseEntity<DashboardSummaryDto> getDashboardSummary(
             @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,

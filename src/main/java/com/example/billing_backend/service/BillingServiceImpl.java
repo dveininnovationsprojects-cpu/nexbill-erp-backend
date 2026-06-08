@@ -4,15 +4,15 @@ import com.example.billing_backend.dto.BillRequest;
 import com.example.billing_backend.dto.BillResponse;
 import com.example.billing_backend.dto.CartItemResponse;
 import com.example.billing_backend.dto.CartSummaryResponse;
-import com.example.billing_backend.model.Inventory;
-import com.example.billing_backend.model.Invoice;
-import com.example.billing_backend.model.InvoiceItem;
+import com.example.billing_backend.model.*;
+import com.example.billing_backend.repository.CustomerRepository;
 import com.example.billing_backend.repository.InventoryRepository;
 import com.example.billing_backend.repository.InvoiceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +25,7 @@ public class BillingServiceImpl implements BillingService {
     private final CartService cartService;
     private final InventoryRepository inventoryRepository;
     private final InvoiceRepository invoiceRepository;
+    private final CustomerRepository customerRepository;
 
     @Override
     @Transactional
@@ -35,17 +36,38 @@ public class BillingServiceImpl implements BillingService {
             throw new RuntimeException("Cart is empty! Cannot generate bill.");
         }
 
+        // Resolve customer name
+        Customer customer = null;
+        String customerName = "Walk-in Customer";
+        String customerPhone = "";
+        if (request.getCustomerId() != null) {
+            customer = customerRepository.findById(request.getCustomerId()).orElse(null);
+        }
+        if (customer != null) {
+            customerName = customer.getName();
+            customerPhone = customer.getMobile() != null ? customer.getMobile() : "";
+        } else if (request.getCustomerName() != null && !request.getCustomerName().isBlank()) {
+            customerName = request.getCustomerName();
+            customerPhone = request.getCustomerPhone() != null ? request.getCustomerPhone() : "";
+        }
+
         String invoiceNumber = "INV-" + LocalDateTime.now().getYear() + "-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+
+        // Apply discount
+        BigDecimal discountAmount = request.getDiscountAmount() != null ? request.getDiscountAmount() : BigDecimal.ZERO;
+        BigDecimal finalGrandTotal = cartSummary.getGrandTotal().subtract(discountAmount).max(BigDecimal.ZERO);
 
         Invoice invoice = Invoice.builder()
                 .invoiceNumber(invoiceNumber)
                 .cashierId(cashierId)
+                .customerName(customerName)
+                .customerPhone(customerPhone)
                 .totalItems(cartSummary.getTotalItems())
                 .totalQuantity(cartSummary.getTotalQuantity())
                 .subtotal(cartSummary.getSubtotal())
                 .gstTotal(cartSummary.getGstTotal())
-                .discountTotal(cartSummary.getDiscountTotal())
-                .grandTotal(cartSummary.getGrandTotal())
+                .discountTotal(discountAmount)
+                .grandTotal(finalGrandTotal)
                 .paymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod() : "CASH")
                 .items(new ArrayList<>())
                 .build();
@@ -53,7 +75,6 @@ public class BillingServiceImpl implements BillingService {
         invoice = invoiceRepository.save(invoice);
 
         for (CartItemResponse cartItem : cartSummary.getItems()) {
-            // Fetching with Pessimistic Write Lock to block other threads safely
             Inventory inv = inventoryRepository.findByProduct_IdForUpdate(cartItem.getProductId())
                     .orElseThrow(() -> new RuntimeException("Product not found: " + cartItem.getProductName()));
 
@@ -86,12 +107,22 @@ public class BillingServiceImpl implements BillingService {
         invoiceRepository.save(invoice);
         cartService.clearCart(cashierId);
 
+        // Update customer totalSpentAmount and tier
+        if (customer != null) {
+            double spent = (customer.getTotalSpentAmount() != null ? customer.getTotalSpentAmount() : 0.0)
+                    + finalGrandTotal.doubleValue();
+            customer.setTotalSpentAmount(spent);
+            customer.setTier(spent >= 50000 ? CustomerTier.CORPORATE : spent >= 10000 ? CustomerTier.VIP : CustomerTier.REGULAR);
+            customer.setLastCreditDateTime(LocalDateTime.now());
+            customerRepository.save(customer);
+        }
+
         return BillResponse.builder()
                 .invoiceNumber(invoiceNumber)
                 .cashierId(cashierId)
                 .grandTotal(invoice.getGrandTotal())
                 .paymentMethod(invoice.getPaymentMethod())
-                .message("Bill generated securely with Lock and stock deducted!")
+                .message("Bill generated successfully!")
                 .timestamp(LocalDateTime.now())
                 .build();
     }
@@ -109,6 +140,11 @@ public class BillingServiceImpl implements BillingService {
     @Override
     public List<Invoice> getAllBills() {
         return invoiceRepository.findAll();
+    }
+
+    @Override
+    public List<Invoice> getInvoicesByCashier(String cashierId) {
+        return invoiceRepository.findByCashierIdOrderByCreatedAtDesc(cashierId);
     }
 
     // =========================================================
