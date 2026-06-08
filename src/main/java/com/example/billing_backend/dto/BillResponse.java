@@ -18,4 +18,5 @@ public class BillResponse {
     private String paymentMethod;
     private String message;
     private LocalDateTime timestamp;
+    private String status;
 }

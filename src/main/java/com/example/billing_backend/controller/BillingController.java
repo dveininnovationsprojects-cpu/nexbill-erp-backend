@@ -1,3 +1,4 @@
+
 package com.example.billing_backend.controller;
 
 import com.example.billing_backend.dto.BillRequest;
@@ -24,39 +25,37 @@ public class BillingController {
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
     @PostMapping("/checkout")
     public ResponseEntity<BillResponse> checkout(Principal principal, @RequestBody BillRequest request) {
-        String cashierId = principal.getName();
-        return ResponseEntity.ok(billingService.checkout(cashierId, request));
+        return ResponseEntity.ok(billingService.checkout(principal.getName(), request));
     }
 
-    // 🔥 Get Specific Bill
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
+    @PostMapping("/create")
+    public ResponseEntity<BillResponse> createDirectInvoice(Principal principal, @RequestBody BillRequest request) {
+        return ResponseEntity.ok(billingService.createDirectInvoice(principal.getName(), request));
+    }
+
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
     @GetMapping("/{invoiceNumber}")
     public ResponseEntity<Invoice> getBill(@PathVariable String invoiceNumber) {
         return ResponseEntity.ok(billingService.getBillByInvoiceNumber(invoiceNumber));
     }
 
-    // =========================================================
-    // 🔥 FRONTEND ISSUE 5 FIX: Both Admin & Cashier can access their respective histories
-    // =========================================================
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')") // Changed from just ROLE_ADMIN
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
     @GetMapping("/history")
     public ResponseEntity<List<Invoice>> getAllBills(Principal principal) {
-        // Fetch user authorities from SecurityContext to pass the role
         String role = SecurityContextHolder.getContext().getAuthentication().getAuthorities().toString();
-
         return ResponseEntity.ok(billingService.getAllBillsForUser(principal.getName(), role));
     }
 
-    // =========================================================
-    // 🔥 CANCEL / SOFT DELETE INVOICE & RESTOCK (Admin Only)
-    // =========================================================
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @PutMapping("/cancel/{invoiceNumber}")
-    public ResponseEntity<String> cancelInvoice(
-            @PathVariable String invoiceNumber,
-            Principal principal) {
+    public ResponseEntity<String> cancelInvoice(@PathVariable String invoiceNumber, Principal principal) {
+        return ResponseEntity.ok(billingService.cancelInvoice(invoiceNumber, principal.getName()));
+    }
 
-        String responseMessage = billingService.cancelInvoice(invoiceNumber, principal.getName());
-        return ResponseEntity.ok(responseMessage);
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_CASHIER')")
+    @PutMapping("/pay/{invoiceNumber}")
+    public ResponseEntity<String> markAsPaid(@PathVariable String invoiceNumber, Principal principal) {
+        return ResponseEntity.ok(billingService.markAsPaid(invoiceNumber, principal.getName()));
     }
 }
