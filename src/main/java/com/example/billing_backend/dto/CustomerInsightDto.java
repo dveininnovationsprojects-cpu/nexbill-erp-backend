@@ -12,3 +12,4 @@ public class CustomerInsightDto {
     private Double totalSpent;
 }
 
+

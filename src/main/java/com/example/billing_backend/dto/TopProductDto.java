@@ -7,5 +7,5 @@ import java.math.BigDecimal;
 @Data @AllArgsConstructor
 public class TopProductDto {
     private String productName;
-    private BigDecimal metricValue; // Used for both quantity or revenue
+    private BigDecimal metricValue;
 }
