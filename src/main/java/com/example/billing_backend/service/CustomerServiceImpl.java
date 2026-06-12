@@ -72,6 +72,12 @@ public class CustomerServiceImpl implements CustomerService {
         double bill = billAmount != null ? billAmount : 0.0;
         double paid = paidAmount != null ? paidAmount : 0.0;
 
+        // 🔥 FIX: Check if customer is paying more than they actually owe
+        double totalOwed = currentDebt + bill;
+        if (paid > totalOwed) {
+            throw new IllegalArgumentException("Transaction blocked: Paid amount (" + paid + ") cannot be greater than the total amount owed (" + totalOwed + ")!");
+        }
+
         // AUTOMATION RULE 2: Arrears Overdue Aging Check (30 Days Limit)
         if (currentDebt > 0 && customer.getLastCreditDateTime() != null) {
             long daysOverdue = java.time.Duration.between(customer.getLastCreditDateTime(), java.time.LocalDateTime.now()).toDays();
@@ -82,7 +88,7 @@ public class CustomerServiceImpl implements CustomerService {
             }
         }
 
-        double newDebt = (currentDebt + bill) - paid;
+        double newDebt = totalOwed - paid; // Clean calculation using totalOwed variable
 
         // Credit Limit Firewall Validation
         if (newDebt > customer.getCreditLimit()) {
@@ -94,7 +100,7 @@ public class CustomerServiceImpl implements CustomerService {
             customer.setTotalSpentAmount(customer.getTotalSpentAmount() + bill);
         }
 
-        customer.setOutstandingDebt(newDebt < 0 ? 0 : newDebt);
+        customer.setOutstandingDebt(newDebt < 0 ? 0 : newDebt); // Kept the safety net just in case
 
         // AUTOMATION RULE 3: Smart Tracking Timestamp Life-cycle Management
         if (customer.getOutstandingDebt() > 0) {
